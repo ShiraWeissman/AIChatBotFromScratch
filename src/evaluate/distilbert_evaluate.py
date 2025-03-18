@@ -3,16 +3,37 @@ import json
 import torch
 import torch.nn.functional as F
 import yaml
+import argparse
+import logging
 from torch.utils.data import DataLoader, Dataset
 from models.distilbert_model.model import load_model
 from evaluate import load
+from src.utils import *
+
+log_dir = os.path.join(ROOT_PATH, "logs", "distilbert_evaluation")
+os.makedirs(log_dir, exist_ok=True)  # Create 'logs/' if it doesn't exist
+
+# Set up logging
+logging.basicConfig(
+    filename=os.path.join(log_dir, "evaluation_results.log"),
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger().addHandler(console)
 
 # Load configuration from YAML
-with open("training_config.yaml", "r") as config_file:
+with open(os.path.join("config", "distilbert_training_config.yaml"), "r") as config_file:
     config = yaml.safe_load(config_file)
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Evaluate the trained DistilBERT model.")
+parser.add_argument("--dataset", type=str, choices=["language_modeling", "question_answering"], required=True, help="Dataset type to evaluate.")
+args = parser.parse_args()
+
 # Extract configurations
-DATASET_TYPE = config["dataset_type"]
+DATASET_TYPE = args.dataset
 DATA_PATH = config["data_path"]
 CHECKPOINT_DIR = config["checkpoint_dir"]
 MODEL_NAME = config["model_name"]
@@ -73,6 +94,7 @@ model.eval()
 
 # Evaluation function
 def evaluate():
+    logging.info(f"Evaluating on {DATASET_TYPE} dataset using {checkpoint_path}")
     total_loss = 0
     all_preds = []
     all_references = []
@@ -111,15 +133,15 @@ def evaluate():
     # Compute final metric
     if DATASET_TYPE == "language_modeling":
         perplexity = metric.compute()
-        print(f"Perplexity: {perplexity:.4f}")
+        logging.info(f"Perplexity: {perplexity:.4f}")
 
     elif DATASET_TYPE == "question_answering":
         results = metric.compute(predictions=all_preds, references=all_references)
-        print(f"Exact Match (EM): {results['exact_match']:.2f}")
-        print(f"F1 Score: {results['f1']:.2f}")
+        logging.info(f"Exact Match (EM): {results['exact_match']:.2f}")
+        logging.info(f"F1 Score: {results['f1']:.2f}")
 
     avg_loss = total_loss / len(test_dataloader)
-    print(f"Average Loss: {avg_loss:.4f}")
+    logging.info(f"Average Loss: {avg_loss:.4f}")
 
 
 if __name__ == "__main__":
