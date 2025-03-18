@@ -1,0 +1,11 @@
+dataset_type: "language_modeling"  # "language_modeling" for TinyStories, "question_answering" for FairytaleQA
+data_path: "data/preprocessed/"
+checkpoint_dir: "models/distilbert_model/checkpoints/"
+model_name: "distilbert-base-uncased"
+
+training:
+  batch_size: 16
+  epochs: 3
+  learning_rate: 5e-5
+
+device: "cuda"  # "cuda" for GPU, "cpu" for CPU
