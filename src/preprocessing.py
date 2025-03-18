@@ -1,9 +1,10 @@
 import os
 import pickle
+import torch
 from datasets import load_dataset
 from transformers import DistilBertTokenizer
 import numpy as np
-from utils import *
+from src.utils import *
 
 # Define dataset names
 DATASETS = {
@@ -31,13 +32,26 @@ def check_existing_files(model_type):
 
 
 # Function to preprocess dataset
-def preprocess_text(example, model_type="distilbert"):
+def preprocess_text(raw, model_type="distilbert"):
     """Tokenizes text based on the chosen model type (DistilBERT or LSTM)."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     if model_type == "distilbert":
-        return distilbert_tokenizer(example["text"], padding="max_length", truncation=True, max_length=512)
+        # Tokenization using DistilBERT
+        tokenized_output = distilbert_tokenizer(raw["text"], padding="max_length", truncation=True, max_length=512)
+
+        # Move the tokenized output to the GPU (if available)
+        tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+        return tokenized_output
+
     elif model_type == "lstm":
-        return {"tokens": lstm_tokenize(example["text"])}  # LSTM uses raw tokens
-    return example
+        # Tokenization for LSTM (example assumes lstm_tokenize is defined)
+        tokens = lstm_tokenize(raw["text"])
+
+        # You can further move tokens to GPU if needed (example: converting to tensor)
+        tokens_tensor = torch.tensor(tokens).to(device)
+        return {"tokens": tokens_tensor}
+    return raw
 
 
 # Function to load and preprocess dataset
@@ -64,7 +78,6 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
 
     print(f"📥 Downloading {dataset_name} dataset from Hugging Face...")
     dataset = load_dataset(dataset_path)
-
     # Apply preprocessing
     print(f"🔄 Preprocessing {dataset_name} for {model_type} model...")
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type))
