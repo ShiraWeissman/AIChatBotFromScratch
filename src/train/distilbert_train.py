@@ -9,36 +9,24 @@ from models.distilbert_model.model import load_model
 from tqdm import tqdm
 from src.utils import *
 
-# Load configuration from YAML
-with open(os.path.join(ROOT_PATH, "config", "distilbert_training_config.yaml"), "r") as config_file:
-    config = yaml.safe_load(config_file)
+
 
 # Extract configurations
-DATASET_TYPE = config["dataset_type"]
-DATASET_NAME = config["dataset_name"]
-DATA_PATH = config["data_path"]
-CHECKPOINT_DIR = config["checkpoint_dir"]
-MODEL_NAME = config["model_name"]
-MODEL_TYPE = config["model_type"]
-DEVICE = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
 
-BATCH_SIZE = int(config["training"]["batch_size"])
-EPOCHS = int(config["training"]["epochs"])
-LEARNING_RATE = float(config["training"]["learning_rate"])
 
-# Ensure checkpoint directory exists
-os.makedirs(os.path.join(ROOT_PATH, CHECKPOINT_DIR), exist_ok=True)
+
 
 
 # Custom dataset class (loads preprocessed data directly)
 class CustomDataset(Dataset):
-    def __init__(self, data_path, split="train"):
+    def __init__(self, data_path, dataset_type, split="train"):
         with open(data_path, "rb") as f:
             self.data = pickle.load(f)
 
         if split not in ["train", "validation"]:
             raise ValueError("split must be either 'train' or 'validation'")
 
+        self.dataset_type = dataset_type
         self.split = split
         self.dataset = self.data[self.split]
 
@@ -48,7 +36,7 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         item = self.dataset[idx]
 
-        if DATASET_TYPE == "language_modeling":
+        if self.dataset_type == "language_modeling":
             print()
             return {
                 "input_ids": torch.tensor(item["input_ids"], dtype=torch.long),
@@ -56,51 +44,75 @@ class CustomDataset(Dataset):
                 "labels": torch.tensor(item["input_ids"], dtype=torch.long),
             }
 
-        elif DATASET_TYPE == "question_answering":
+        elif self.dataset_type == "question_answering":
             return {
                 "input_ids": torch.tensor(item["input_ids"], dtype=torch.long),
                 "attention_mask": torch.tensor(item["attention_mask"], dtype=torch.long),
-                "start_positions": torch.tensor(item["start_position"], dtype=torch.long),
-                "end_positions": torch.tensor(item["end_position"], dtype=torch.long),
+                "start_positions": torch.tensor(item["start_positions"], dtype=torch.long),
+                "end_positions": torch.tensor(item["end_positions"], dtype=torch.long),
             }
 
         else:
-            raise ValueError("Unsupported DATASET_TYPE")
+            raise ValueError("Unsupported dataset_type")
 
-def prepare_for_training():
+def prepare_for_training(task_type):
+    print('Loading training configuration..')
+    with open(os.path.join(root_path, "config", "distilbert_training_config.yaml"), "r") as config_file:
+        config = yaml.safe_load(config_file)
+    if task_type == 'language_modeling':
+        config = config['language_modeling']
+    elif task_type == 'question_answering':
+        config = config['question_answering']
+    dataset_type = config["dataset_type"]
+    dataset_name = config["dataset_name"]
+    data_path = config["data_path"]
+    checkpoint_dir = config["checkpoint_dir"]
+    pretrained_model_name = config["pretrained_model_name"]
+    model_type = config["model_type"]
+    device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
+    batch_size = int(config["training"]["batch_size"])
+    learning_rate = float(config["training"]["learning_rate"])
+    # Ensure checkpoint directory exists
+    os.makedirs(os.path.join(root_path, checkpoint_dir), exist_ok=True)
     print('Loading dataset..')
-    dataset_path = os.path.join(ROOT_PATH, DATA_PATH, f"{DATASET_NAME}_{MODEL_TYPE}_preprocessed.pkl")
-    dataset = CustomDataset(dataset_path)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    dataset_path = os.path.join(root_path, data_path, f"{dataset_name}_{model_type}_preprocessed.pkl")
+    dataset = CustomDataset(dataset_path, dataset_type)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     print('Loading model..')
-    model = load_model(task_type=DATASET_TYPE, model_name=MODEL_NAME).to(DEVICE)
+    model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name).to(device)
 
-    print('Building optomizer..')
-    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-    return dataloader, model, optimizer
+    print('Building optimizer..')
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
+    return dataloader, model, optimizer, config
 
 
 # Training Loop
-def train(dataloader, model, optimizer):
+def train(dataloader, model, optimizer, config):
+    epochs = int(config["training"]["epochs"])
+    device = config["device"]
+    dataset_type = config["dataset_type"]
+    dataset_type_short = 'lm' if dataset_type == "language_modeling" else 'qa'
+    checkpoint_dir = config["checkpoint_dir"]
+    dataset_name = config["dataset_name"]
     model.train()
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
         total_loss = 0
 
         # Wrap dataloader with tqdm for progress tracking
-        for batch in tqdm(dataloader, desc=f"Epoch {epoch + 1}/{EPOCHS}", leave=True):
+        for batch in tqdm(dataloader, desc=f"Epoch {epoch + 1}/{epochs}", leave=True):
             optimizer.zero_grad()
 
-            input_ids = batch["input_ids"].to(DEVICE)
-            attention_mask = batch["attention_mask"].to(DEVICE)
+            input_ids = batch["input_ids"]#.to(device)
+            attention_mask = batch["attention_mask"]#.to(device)
 
-            if DATASET_TYPE == "language_modeling":
-                labels = batch["labels"].to(DEVICE)
+            if dataset_type == "language_modeling":
+                labels = batch["labels"].to(device)
                 loss, _ = model(input_ids, attention_mask, labels=labels)
 
-            elif DATASET_TYPE == "question_answering":
-                start_positions = batch["start_positions"].to(DEVICE)
-                end_positions = batch["end_positions"].to(DEVICE)
+            elif dataset_type == "question_answering":
+                start_positions = batch["start_positions"].to(device)
+                end_positions = batch["end_positions"].to(device)
                 loss, _, _ = model(input_ids, attention_mask, start_positions, end_positions)
 
             loss.backward()
@@ -108,14 +120,17 @@ def train(dataloader, model, optimizer):
             total_loss += loss.item()
 
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch [{epoch + 1}/{EPOCHS}], Loss: {avg_loss:.4f}")
+        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.4f}")
 
         # Save checkpoint
-        checkpoint_path = os.path.join(ROOT_PATH, CHECKPOINT_DIR, f"{DATASET_TYPE}_{DATASET_NAME}_epoch{epoch + 1}.pt")
+        checkpoint_path = os.path.join(root_path, checkpoint_dir, f"{dataset_type}_{dataset_name}_epoch{epoch + 1}.pt")
         torch.save(model.state_dict(), checkpoint_path)
         print(f"Checkpoint saved at {checkpoint_path}")
+    model.save_pretrained(os.path.join(root_path, f"train/models/distilbert_{dataset_type_short}"))
+
 
 
 if __name__ == "__main__":
-    dataloader, model, optimizer = prepare_for_training()
-    train(dataloader, model, optimizer)
+    # task type options: "language_modeling" or "question_answering"
+    dataloader, model, optimizer, config = prepare_for_training(task_type="question_answering")
+    train(dataloader, model, optimizer, config)

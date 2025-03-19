@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
 from transformers import DistilBertConfig, DistilBertForMaskedLM, DistilBertForQuestionAnswering
-
+from src.utils import *
 
 class DistilBERTForLanguageModeling(nn.Module):
     """
     DistilBERT model for training on language modeling tasks (e.g., next-token prediction, masked language modeling).
     """
 
-    def __init__(self, model_name="distilbert-base-uncased"):
+    def __init__(self, pretrained_model_name="distilbert-base-uncased"):
         super(DistilBERTForLanguageModeling, self).__init__()
-        self.config = DistilBertConfig.from_pretrained(model_name)
-        self.model = DistilBertForMaskedLM.from_pretrained(model_name, config=self.config)
+        self.config = DistilBertConfig.from_pretrained(pretrained_model_name)
+        self.model = DistilBertForMaskedLM.from_pretrained(pretrained_model_name, config=self.config)
 
     def forward(self, input_ids, attention_mask, labels=None):
         outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
@@ -24,10 +24,10 @@ class DistilBERTForQuestionAnswering(nn.Module):
     Predicts start and end tokens for answer spans.
     """
 
-    def __init__(self, model_name="distilbert-base-uncased"):
+    def __init__(self, pretrained_model_name="distilbert-base-uncased"):
         super(DistilBERTForQuestionAnswering, self).__init__()
-        self.config = DistilBertConfig.from_pretrained(model_name)
-        self.model = DistilBertForQuestionAnswering.from_pretrained(model_name, config=self.config)
+        self.config = DistilBertConfig.from_pretrained(pretrained_model_name)
+        self.model = DistilBertForQuestionAnswering.from_pretrained(pretrained_model_name, config=self.config)
 
     def forward(self, input_ids, attention_mask, start_positions=None, end_positions=None):
         outputs = self.model(
@@ -39,7 +39,7 @@ class DistilBERTForQuestionAnswering(nn.Module):
         return outputs.loss, outputs.start_logits, outputs.end_logits  # Loss and logits
 
 
-def load_model(task_type="language_modeling", model_name="distilbert-base-uncased", checkpoint_path=None):
+def load_model(task_type="language_modeling", pretrained_model_name="distilbert-base-uncased", checkpoint_path=None):
     """
     Load the appropriate DistilBERT model for the given task.
 
@@ -52,9 +52,10 @@ def load_model(task_type="language_modeling", model_name="distilbert-base-uncase
         model (nn.Module): Loaded model instance
     """
     if task_type.lower() == "language_modeling":
-        model = DistilBERTForLanguageModeling(model_name)
+        model = DistilBERTForLanguageModeling(pretrained_model_name)
     elif task_type.lower() == "question_answering":
-        model = DistilBERTForQuestionAnswering(model_name)
+        model = DistilBertForQuestionAnswering.from_pretrained(os.path.join(root_path, "models/distilbert_lm"))
+        model = DistilBERTForQuestionAnswering(pretrained_model_name)
     else:
         raise ValueError("Invalid task_type. Choose 'language_modeling' or 'question_answering'.")
 
