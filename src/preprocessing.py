@@ -26,8 +26,8 @@ def lstm_tokenize(text):
 
 
 # Function to check if processed data exists
-def check_existing_files(model_type):
-    file_path = os.path.join(PROCESSED_DIR, f"{model_type}_preprocessed.pkl")
+def check_existing_files(model_type, dataset_name):
+    file_path = os.path.join(PROCESSED_DIR, f"{dataset_name}_{model_type}_preprocessed.pkl")
     return file_path if os.path.exists(file_path) else None
 
 
@@ -64,7 +64,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
     :return: Preprocessed dataset.
     """
     # Check for existing preprocessed file
-    processed_file = check_existing_files(model_type)
+    processed_file = check_existing_files(model_type, dataset_name)
 
     if processed_file and not force_reprocess:
         print(f"✅ Loading preprocessed {dataset_name} dataset from {processed_file}...")
@@ -83,7 +83,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type))
 
     # Save processed data
-    save_path = os.path.join(PROCESSED_DIR, f"{model_type}_preprocessed.pkl")
+    save_path = os.path.join(PROCESSED_DIR, f"{dataset_name}_{model_type}_preprocessed.pkl")
     with open(save_path, "wb") as f:
         pickle.dump(dataset, f)
 
@@ -98,5 +98,5 @@ if __name__ == "__main__":
     fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")
 
     # Load & preprocess for LSTM
-    tinystories_lstm = load_and_preprocess_dataset("tinystories", model_type="lstm")
-    fairytaleqa_lstm = load_and_preprocess_dataset("fairytaleqa", model_type="lstm")
+    # tinystories_lstm = load_and_preprocess_dataset("tinystories", model_type="lstm")
+    # fairytaleqa_lstm = load_and_preprocess_dataset("fairytaleqa", model_type="lstm")

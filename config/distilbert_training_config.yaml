@@ -1,7 +1,9 @@
 dataset_type: "language_modeling"  # "language_modeling" for TinyStories, "question_answering" for FairytaleQA
-data_path: "data/preprocessed/"
-checkpoint_dir: "models/distilbert_model/checkpoints/"
+dataset_name: "tinystories"
+data_path: "data\\processed\\"
+checkpoint_dir: "models\\distilbert_model\\checkpoints\\"
 model_name: "distilbert-base-uncased"
+model_type: "distilbert"
 
 training:
   batch_size: 16
