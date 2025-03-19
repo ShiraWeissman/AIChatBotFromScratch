@@ -13,7 +13,7 @@ DATASETS = {
 }
 
 # Define paths for processed data storage
-PROCESSED_DIR = os.path.join(ROOT_PATH, "data/processed/")
+PROCESSED_DIR = os.path.join(root_path, "data/processed/")
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 # Initialize tokenizers (for DistilBERT & LSTM approaches)
@@ -45,14 +45,14 @@ def preprocess_text(raw, model_type="distilbert", dataset_name="tinystories"):
             tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
             return tokenized_output
 
-        elif dataset_name == "fairytaleQA":
+        elif dataset_name == "fairytaleqa":
             # FairytaleQA-specific preprocessing for DistilBERT for Question Answering
-            context = raw["story"]
+            content = raw["content"]
             question = raw["question"]
             answer = raw["answer"]
 
-            # Combine the context (story) and question into a single string for tokenization
-            input_text = f"story: {context} question: {question}"
+            # Combine the content and question into a single string for tokenization
+            input_text = f"content: {content} question: {question}"
 
             # Tokenize the combined text (context + question) using DistilBERT tokenizer
             tokenized_output = distilbert_tokenizer(input_text, padding="max_length", truncation=True, max_length=512)
@@ -136,6 +136,9 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
 
     print(f"📥 Downloading {dataset_name} dataset from Hugging Face...")
     dataset = load_dataset(dataset_path, trust_remote_code=True)
+    if len(dataset['train']) > 10000:
+        dataset["train"] = dataset["train"].select(range(10000))
+        print(len(dataset['train']))
     # Apply preprocessing
     print(f"🔄 Preprocessing {dataset_name} for {model_type} model...")
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
