@@ -9,7 +9,7 @@ from src.utils import *
 # Define dataset names
 DATASETS = {
     "tinystories": "roneneldan/TinyStories",
-    "fairytaleqa": "FairyTaleQA/FairyTaleQA_1.0"
+    "fairytaleqa": "GEM/FairytaleQA"
 }
 
 # Define paths for processed data storage
@@ -32,26 +32,84 @@ def check_existing_files(model_type, dataset_name):
 
 
 # Function to preprocess dataset
-def preprocess_text(raw, model_type="distilbert"):
-    """Tokenizes text based on the chosen model type (DistilBERT or LSTM)."""
+def preprocess_text(raw, model_type="distilbert", dataset_name="tinystories"):
+    """Preprocesses text for the chosen model type (DistilBERT for QA or LSTM) and dataset (TinyStories or FairytaleQA)."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_type == "distilbert":
-        # Tokenization using DistilBERT
-        tokenized_output = distilbert_tokenizer(raw["text"], padding="max_length", truncation=True, max_length=512)
+        if dataset_name == "tinystories":
+            # Tokenization for TinyStories using DistilBERT
+            tokenized_output = distilbert_tokenizer(raw["text"], padding="max_length", truncation=True, max_length=512)
 
-        # Move the tokenized output to the GPU (if available)
-        tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
-        return tokenized_output
+            # Move the tokenized output to the GPU (if available)
+            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+            return tokenized_output
+
+        elif dataset_name == "fairytaleQA":
+            # FairytaleQA-specific preprocessing for DistilBERT for Question Answering
+            context = raw["story"]
+            question = raw["question"]
+            answer = raw["answer"]
+
+            # Combine the context (story) and question into a single string for tokenization
+            input_text = f"story: {context} question: {question}"
+
+            # Tokenize the combined text (context + question) using DistilBERT tokenizer
+            tokenized_output = distilbert_tokenizer(input_text, padding="max_length", truncation=True, max_length=512)
+
+            # Identify start and end positions for the answer in the tokenized context
+            # Find the answer span in the tokenized input text (this is done by finding the start and end token indices)
+            answer_tokens = distilbert_tokenizer(answer)["input_ids"]
+            start_position = None
+            end_position = None
+
+            # Try to match the answer in the tokenized context to find start and end positions
+            context_tokens = tokenized_output["input_ids"]
+            answer_len = len(answer_tokens)
+
+            for i in range(len(context_tokens) - answer_len + 1):
+                if context_tokens[i:i + answer_len] == answer_tokens:
+                    start_position = i
+                    end_position = i + answer_len - 1
+                    break
+
+            # If no match is found, fallback to a default value (this can be adjusted based on your approach)
+            if start_position is None or end_position is None:
+                start_position = 0
+                end_position = 0
+
+            # Add start and end positions to the tokenized output
+            tokenized_output["start_positions"] = torch.tensor(start_position).to(device)
+            tokenized_output["end_positions"] = torch.tensor(end_position).to(device)
+
+            # Move the tokenized output to the GPU (if available)
+            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+            return tokenized_output
 
     elif model_type == "lstm":
-        # Tokenization for LSTM (example assumes lstm_tokenize is defined)
-        tokens = lstm_tokenize(raw["text"])
+        if dataset_name == "tinystories":
+            # Tokenization for TinyStories using LSTM
+            tokens = lstm_tokenize(raw["text"])
+            tokens_tensor = torch.tensor(tokens).to(device)
+            return {"tokens": tokens_tensor}
 
-        # You can further move tokens to GPU if needed (example: converting to tensor)
-        tokens_tensor = torch.tensor(tokens).to(device)
-        return {"tokens": tokens_tensor}
+        elif dataset_name == "fairytaleQA":
+            # FairytaleQA-specific preprocessing for LSTM
+            # Tokenize context (story) and question separately
+            context = raw["story"]
+            question = raw["question"]
+
+            context_tokens = lstm_tokenize(context)
+            question_tokens = lstm_tokenize(question)
+
+            # Combine the tokens into a single tensor or process as needed
+            context_tensor = torch.tensor(context_tokens).to(device)
+            question_tensor = torch.tensor(question_tokens).to(device)
+
+            return {"context_tokens": context_tensor, "question_tokens": question_tensor}
+
     return raw
+
 
 
 # Function to load and preprocess dataset
@@ -77,10 +135,10 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
         raise ValueError(f"Dataset {dataset_name} not found in available datasets.")
 
     print(f"📥 Downloading {dataset_name} dataset from Hugging Face...")
-    dataset = load_dataset(dataset_path)
+    dataset = load_dataset(dataset_path, trust_remote_code=True)
     # Apply preprocessing
     print(f"🔄 Preprocessing {dataset_name} for {model_type} model...")
-    dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type))
+    dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
 
     # Save processed data
     save_path = os.path.join(PROCESSED_DIR, f"{dataset_name}_{model_type}_preprocessed.pkl")
@@ -94,7 +152,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilbert", force_rep
 # Example Usage
 if __name__ == "__main__":
     # Load & preprocess for DistilBERT
-    tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
+    #tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
     fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")
 
     # Load & preprocess for LSTM
