@@ -103,8 +103,8 @@ def train(dataloader, model, optimizer, config):
         for batch in tqdm(dataloader, desc=f"Epoch {epoch + 1}/{epochs}", leave=True):
             optimizer.zero_grad()
 
-            input_ids = batch["input_ids"]#.to(device)
-            attention_mask = batch["attention_mask"]#.to(device)
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
 
             if dataset_type == "language_modeling":
                 labels = batch["labels"].to(device)
