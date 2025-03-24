@@ -14,7 +14,7 @@ class CustomDataset(Dataset):
         if split not in ["train", "validation"]:
             raise ValueError("split must be either 'train' or 'validation'")
 
-        self.dataset_type = dataset_type
+        self.dataset_type = dataset_type.lower()
         self.split = split
         self.dataset = self.data[self.split]
         self.model_type = model_type

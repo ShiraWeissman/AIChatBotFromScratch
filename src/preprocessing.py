@@ -144,6 +144,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     :param force_reprocess: If True, forces reprocessing even if a saved file exists.
     :return: Preprocessed dataset.
     """
+    dataset_name = dataset_name.lower()
     # Check for existing preprocessed file
     processed_file = check_existing_files(model_type, dataset_name)
 
