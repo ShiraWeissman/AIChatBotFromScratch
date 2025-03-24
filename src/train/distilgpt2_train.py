@@ -19,8 +19,6 @@ def prepare_for_training(task_type):
     pretrained_model_name = config["pretrained_model_name"]
     model_type = config["model_type"]
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
-    batch_size = int(config["training"]["batch_size"])
-    learning_rate = float(config["training"]["learning_rate"])
     # Ensure checkpoint directory exists
     os.makedirs(os.path.join(root_path, checkpoint_dir), exist_ok=True)
     print('Loading dataset..')
@@ -63,7 +61,7 @@ def train_model(model, train_dataset, valid_dataset, config):
         save_total_limit=2,
         logging_dir=f"{save_path}/logs",
         logging_steps=100,
-        report_to=config['report_to']
+        report_to= [config['report_to']]
     )
 
     # Trainer setup
@@ -82,5 +80,5 @@ def train_model(model, train_dataset, valid_dataset, config):
 
 
 if __name__ == '__main__':
-    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering")
+    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="language_modeling") #"question_answering"
     train_model(model, train_dataset, valid_dataset, config)
