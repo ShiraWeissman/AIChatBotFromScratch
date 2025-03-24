@@ -62,7 +62,8 @@ def train_model(model, train_dataset, valid_dataset, config):
         num_train_epochs=epochs,
         save_total_limit=2,
         logging_dir=f"{save_path}/logs",
-        logging_steps=100
+        logging_steps=100,
+        report_to=config['report_to']
     )
 
     # Trainer setup
@@ -81,5 +82,5 @@ def train_model(model, train_dataset, valid_dataset, config):
 
 
 if __name__ == '__main__':
-    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="language_modeling")
+    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering")
     train_model(model, train_dataset, valid_dataset, config)
