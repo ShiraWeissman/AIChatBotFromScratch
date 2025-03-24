@@ -61,7 +61,7 @@ def train_model(model, train_dataset, valid_dataset, config):
         save_total_limit=2,
         logging_dir=f"{save_path}/logs",
         logging_steps=100,
-        report_to= [config['report_to']]
+        report_to=config["report_to"] if bool(config["report_to"]) else "none"
     )
 
     # Trainer setup
