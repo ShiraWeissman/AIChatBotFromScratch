@@ -97,41 +97,12 @@ def preprocess_text(raw, model_type="distilbert", dataset_name="tinystories"):
             tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
             return tokenized_output
         elif dataset_name == "fairytaleqa":
-            # FairytaleQA-specific preprocessing for DistilBERT for Question Answering
-            content = raw["content"]
-            question = raw["question"]
-            answer = raw["answer"]
-
-            # Combine the content and question into a single string for tokenization
-            input_text = f"content: {content} question: {question}"
+            # Combine the content, question and answer into a single string for tokenization
+            input_text = f"Context: {raw['content']} Question: {raw['question']} Answer: {raw['answer']}"
 
             # Tokenize the combined text (context + question) using DistilBERT tokenizer
             tokenized_output = distilgpt2_tokenizer(input_text,  truncation=True, padding="max_length", max_length=512)
-
-            # Identify start and end positions for the answer in the tokenized context
-            # Find the answer span in the tokenized input text (this is done by finding the start and end token indices)
-            answer_tokens = distilbert_tokenizer(answer)["input_ids"]
-            start_position = None
-            end_position = None
-
-            # Try to match the answer in the tokenized context to find start and end positions
-            context_tokens = tokenized_output["input_ids"]
-            answer_len = len(answer_tokens)
-
-            for i in range(len(context_tokens) - answer_len + 1):
-                if context_tokens[i:i + answer_len] == answer_tokens:
-                    start_position = i
-                    end_position = i + answer_len - 1
-                    break
-
-            # If no match is found, fallback to a default value (this can be adjusted based on your approach)
-            if start_position is None or end_position is None:
-                start_position = 0
-                end_position = 0
-
-            # Add start and end positions to the tokenized output
-            tokenized_output["start_positions"] = torch.tensor(start_position).to(device)
-            tokenized_output["end_positions"] = torch.tensor(end_position).to(device)
+            tokenized_output['labels'] = tokenized_output['input_ids']
 
             # Move the tokenized output to the GPU (if available)
             tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
@@ -208,7 +179,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
     tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000, model_type="distilgpt2")
-    fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000, model_type="distilgpt2")
+    fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=100, model_type="distilgpt2")
     # Load & preprocess for DistilBERT
     #tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
     #fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")
