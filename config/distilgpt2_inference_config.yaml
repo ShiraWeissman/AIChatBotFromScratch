@@ -1,0 +1,18 @@
+model:
+  path: "models/distilgpt2_model"  # Path to the trained model directory
+  device: "cuda"  # Set to "cuda" for GPU, "cpu" for CPU
+
+inference:
+  max_length: 50  # Maximum length of generated text
+  do_sample: true  # Enables randomness for more creative responses
+  top_k: 50  # Limits selection to the top-k most probable words
+  top_p: 0.95  # Nucleus sampling - keeps only the most probable words
+  temperature: 0.7  # Controls randomness (lower = more deterministic)
+
+logging:
+  enable: true  # Set to false if you don't want logs
+  log_level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
+
+server:
+  port: 5000  # Port number for Flask app
+  host: "0.0.0.0"  # Allows access from external devices if deployed
