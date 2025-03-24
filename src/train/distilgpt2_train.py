@@ -17,17 +17,21 @@ def prepare_for_training(task_type):
     data_path = config["data_path"]
     checkpoint_dir = config["checkpoint_dir"]
     pretrained_model_name = config["pretrained_model_name"]
+    pretrained_model_path = config["pretrained_model_path"]
     model_type = config["model_type"]
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
     # Ensure checkpoint directory exists
     os.makedirs(os.path.join(root_path, checkpoint_dir), exist_ok=True)
     print('Loading dataset..')
     dataset_path = os.path.join(root_path, data_path, f"{dataset_name}_{model_type}_preprocessed.pkl")
-    train_dataset = CustomDataset(dataset_path, dataset_type, split='train')
-    valid_dataset = CustomDataset(dataset_path, dataset_type, split='validation')
+    train_dataset = CustomDataset(dataset_path, dataset_type, split='train', model_type='distilgpt2')
+    valid_dataset = CustomDataset(dataset_path, dataset_type, split='validation', model_type='distilgpt2')
 
     print('Loading model..')
-    model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name).to(device)
+    if bool(pretrained_model_path):
+        model = load_model(task_type=dataset_type, pretrained_model_name=os.path.join(root_path, pretrained_model_path)).to(device)
+    else:
+        model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name).to(device)
 
     return model, train_dataset, valid_dataset, config
 
@@ -80,5 +84,5 @@ def train_model(model, train_dataset, valid_dataset, config):
 
 
 if __name__ == '__main__':
-    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="language_modeling") #"question_answering"
+    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering") #"question_answering" "language_modeling"
     train_model(model, train_dataset, valid_dataset, config)

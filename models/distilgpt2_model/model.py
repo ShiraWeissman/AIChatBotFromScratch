@@ -28,26 +28,33 @@ class DistilGPT2ForLanguageModeling(nn.Module):
     def forward(self, input_ids, attention_mask, labels=None):
         return self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
 
-    def save_model(self, save_path="models/distilgpt2_model"):
+    def save_model(self, save_path="models/distilgpt2_lm"):
         """ Save the trained model and tokenizer correctly """
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
 
-    def load_model(self, model_path="models/distilgpt2_model"):
+    def load_model(self, model_path="models/distilgpt2_lm"):
         """ Load the trained model and tokenizer """
         print("Loading trained model from:", model_path)
         self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Load model correctly
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-class DistilGPT2ForQuestionAnswering(AutoModelForQuestionAnswering):
+class DistilGPT2ForQuestionAnswering(nn.Module):
     """
     Fine-tuned DistilGPT-2 for Question Answering.
     Uses causal language modeling to generate answers based on a question and context.
     """
 
     def __init__(self, pretrained_model_name="distilgpt2"):
-        self.model = AutoModelForQuestionAnswering.from_pretrained(pretrained_model_name)
+        super().__init__()  # Fix: Initialize nn.Module correctly
+
+        print("Loading model...")
+        self.model = AutoModelForCausalLM.from_pretrained(pretrained_model_name)
+
+        print("Loading tokenizer...")
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
+
+        print("Setting padding token...")
         self.tokenizer.pad_token = self.tokenizer.eos_token  # GPT-2 doesn’t have a pad token
 
     def generate_answer(self, context, question, max_length=50):
@@ -65,9 +72,11 @@ class DistilGPT2ForQuestionAnswering(AutoModelForQuestionAnswering):
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
 
-    def load_model(self):
-        self.model.load_pretrained(self.pretrinaed_model_path)
-        self.tokenizer.load_pretrained(self.pretrinaed_tokenizer_path)
+    def load_model(self, model_path="models/distilgpt2_qa"):
+        """ Loads a fine-tuned model and tokenizer correctly """
+        print(f"Loading model from {model_path}...")
+        self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Fix: Correct loading method
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 
 def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2", checkpoint_path=None):
@@ -87,7 +96,7 @@ def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2"
         model = DistilGPT2ForLanguageModeling(pretrained_model_name)
     elif task_type.lower() == "question_answering":
         print("Loading DistilGPT2ForQuestionAnswering..")
-        model = DistilGPT2ForQuestionAnswering(os.path.join(root_path, "models/distilgpt2_lm"))
+        model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
         #model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
     else:
         raise ValueError("Invalid task_type. Choose 'language_modeling' or 'question_answering'.")

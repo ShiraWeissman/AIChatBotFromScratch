@@ -12,7 +12,7 @@ language_modeling:
 
   training:
     batch_size: 16
-    epochs: 3
+    epochs: 1
     learning_rate: 5e-5
     evaluation_strategy: "epoch"
     save_strategy: "epoch"
@@ -24,13 +24,17 @@ question_answering:
   dataset_type: "question_answering"  # "language_modeling" for TinyStories, "question_answering" for FairytaleQA
   dataset_name: "fairytaleQA"
   data_path: "data/processed"
-  checkpoint_dir: "models/distilbert_QA_model/checkpoints"
-  pretrained_model_name: "train/models/distilbert_lm"
-  model_type: "distilbert"
+  checkpoint_dir: "models/distilgpt2_QA_model/checkpoints"
+  pretrained_model_name: "distilgpt2"
+  pretrained_model_path: "models/distilgpt2_LM_model"
+  pretrained_tokenizer_path: null
+  pretrained_tokenizer: "distilgpt2"
+  model_type: "distilgpt2"
   report_to: null
 
   training:
     batch_size: 16
-    epochs: 3
+    epochs: 1
     learning_rate: 5e-5
   device: "cuda"  # "cuda" for GPU, "cpu" for CPU
+  save_path: "models/distilgpt2_QA_model"
