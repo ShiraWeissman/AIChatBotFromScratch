@@ -6,8 +6,7 @@ from models.distilgpt2_model.model import load_model
 
 def prepare_for_training(task_type):
     print('Loading training configuration..')
-    with open(os.path.join(root_path, "config", "distilgpt2_training_config.yaml"), "r") as config_file:
-        config = yaml.safe_load(config_file)
+    config = load_config("distilgpt2_training_config")
     if task_type == 'language_modeling':
         config = config['language_modeling']
     elif task_type == 'question_answering':

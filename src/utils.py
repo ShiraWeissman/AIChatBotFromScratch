@@ -1,7 +1,8 @@
 import os
 import torch
 import pickle
-from torch.utils.data import DataLoader, Dataset
+import yaml
+from torch.utils.data import Dataset
 
 root_path = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
 
@@ -51,6 +52,10 @@ class CustomDataset(Dataset):
         else:
             raise ValueError("Unsupported dataset_type")
 
+def load_config(config_name):
+    with open(os.path.join(root_path, "config", f"{config_name}.yaml"), "r") as f:
+        config = yaml.safe_load(f)
+    return config
 
 if __name__ == '__main__':
     pass
