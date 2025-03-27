@@ -1,6 +1,6 @@
 model:
-  path: "models/distilgpt2_model"  # Path to the trained model directory
-  device: "cuda"  # Set to "cuda" for GPU, "cpu" for CPU
+  path: "distilgpt2" #"models/distilgpt2_model"  # Path to the trained model directory
+  device: "cpu"  # Set to "cuda" for GPU, "cpu" for CPU
 
 inference:
   max_length: 50  # Maximum length of generated text

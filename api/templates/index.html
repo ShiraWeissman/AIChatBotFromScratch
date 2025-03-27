@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Answering</title>
+</head>
+<body>
+    <h1>Question Answering using DistilGPT-2</h1>
+    <form action="/generate_answer" method="POST">
+        <label for="context">Context:</label><br>
+        <textarea name="context" id="context" rows="4" cols="50">{{ context or "" }}</textarea><br><br>
+
+        <label for="question">Question:</label><br>
+        <input type="text" name="question" id="question" value="{{ question or '' }}" size="50"><br><br>
+
+        <button type="submit">Generate Answer</button>
+    </form>
+
+    {% if answer %}
+    <h2>Generated Answer:</h2>
+    <p>{{ answer }}</p>
+    {% endif %}
+
+    {% if context and not answer %}
+    <p>Please provide a question to get an answer.</p>
+    {% endif %}
+</body>
+</html>

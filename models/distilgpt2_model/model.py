@@ -39,6 +39,7 @@ class DistilGPT2ForLanguageModeling(nn.Module):
         self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Load model correctly
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
+
 class DistilGPT2ForQuestionAnswering(nn.Module):
     """
     Fine-tuned DistilGPT-2 for Question Answering.
@@ -57,14 +58,25 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
         print("Setting padding token...")
         self.tokenizer.pad_token = self.tokenizer.eos_token  # GPT-2 doesn’t have a pad token
 
-    def generate_answer(self, context, question, max_length=50):
+    def generate_answer(self, question, config, context="Fairy tales", max_length=50):
         """
         Generates an answer given a context and a question.
         """
         input_text = f"Context: {context} Question: {question} Answer:"
-        input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids
 
-        output_ids = self.model.generate(input_ids, max_length=max_length, pad_token_id=self.tokenizer.eos_token_id)
+        encoding = self.tokenizer(input_text, return_tensors="pt", padding=True, truncation=True)
+
+        input_ids = encoding.input_ids
+        attention_mask = encoding.attention_mask
+
+        output_ids = self.model.generate(input_ids,
+                                         attention_mask=attention_mask,
+                                         max_length=config["inference"]["max_length"],
+                                         pad_token_id=self.tokenizer.eos_token_id,
+                                         do_sample=config["inference"]["do_sample"],
+                                         top_k=config["inference"]["top_k"],
+                                         top_p=config["inference"]["top_p"],
+                                         temperature=config["inference"]["temperature"])
         return self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
     def save_model(self, save_path="models/distilgpt2_qa"):
@@ -77,6 +89,45 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
         print(f"Loading model from {model_path}...")
         self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Fix: Correct loading method
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+    # def generate_answer(self, context, question, max_length=50):
+    #     """
+    #     Generates an answer given a context and a question.
+    #     """
+    #     input_text = f"Context: {context} Question: {question} Answer:"
+    #     input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids
+    #
+    #     output_ids = self.model.generate(input_ids, max_length=max_length, pad_token_id=self.tokenizer.eos_token_id)
+    #     return self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+    # def generate(self, prompt, max_length=50, do_sample=True, top_k=50, top_p=0.95, temperature=0.7):
+    #     """
+    #     Generates text based on the provided prompt using causal language modeling.
+    #     This can be used for more general text generation (e.g., story generation, creative text, etc.).
+    #     """
+    #     # Tokenize the prompt and create an attention mask
+    #     encoding = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+    #     input_ids = encoding.input_ids.to(self.model.device)  # Ensure input_ids are on the correct device
+    #     attention_mask = encoding.attention_mask.to(self.model.device)  # Attention mask for padding tokens
+    #
+    #     # Generate text using the model
+    #     output_ids = self.model.generate(
+    #         input_ids,
+    #         attention_mask=attention_mask,  # Pass attention mask
+    #         max_length=max_length,
+    #         pad_token_id=self.tokenizer.eos_token_id,
+    #         do_sample=do_sample,  # Enables randomness for creative text
+    #         top_k=top_k,  # Limits to top K words per step
+    #         top_p=top_p,  # Nucleus sampling
+    #         temperature=temperature  # Controls randomness (lower = more deterministic)
+    #     )
+    #
+    #     # Convert tensor to list for decoding
+    #     output_ids = output_ids[0].cpu().numpy().tolist()
+    #
+    #     # Decode the output_ids to a string
+    #     output_text = self.tokenizer.decode(output_ids, skip_special_tokens=True)
+    #     return output_text
 
 
 def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2", checkpoint_path=None):
@@ -97,7 +148,7 @@ def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2"
     elif task_type.lower() == "question_answering":
         print("Loading DistilGPT2ForQuestionAnswering..")
         model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
-        #model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
+        # model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
     else:
         raise ValueError("Invalid task_type. Choose 'language_modeling' or 'question_answering'.")
 
