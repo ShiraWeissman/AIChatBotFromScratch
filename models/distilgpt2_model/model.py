@@ -194,7 +194,7 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
     #     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2",
-               pretrained_tokenizer_name="distligpt2",
+               pretrained_tokenizer_name="distilgpt2",
                checkpoint_path=None):
     """
     Load the appropriate Distilgpt2 model for the given task.
