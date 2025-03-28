@@ -17,6 +17,7 @@ def prepare_for_training(task_type):
     checkpoint_dir = config["checkpoint_dir"]
     pretrained_model_name = config["pretrained_model_name"]
     pretrained_model_path = config["pretrained_model_path"]
+    pretrained_tokenizer_name = config["pretrained_tokenizer_name"]
     model_type = config["model_type"]
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
     # Ensure checkpoint directory exists
@@ -30,7 +31,8 @@ def prepare_for_training(task_type):
     if bool(pretrained_model_path):
         model = load_model(task_type=dataset_type, pretrained_model_name=os.path.join(root_path, pretrained_model_path)).to(device)
     else:
-        model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name).to(device)
+        model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name,
+                           pretrained_tokenizer_name=pretrained_tokenizer_name).to(device)
 
     return model, train_dataset, valid_dataset, config
 
@@ -81,7 +83,15 @@ def train_model(model, train_dataset, valid_dataset, config):
     model.save_model(os.path.join(root_path, save_path))
     print(f"Model saved at {save_path}")
 
+def evaluate_model(model, train_dataset, valid_dataset):
+    train_eval = model.evaluate(train_dataset)
+    valid_eval = model.evaluate(valid_dataset)
+    if model.model_type == "Language model":
+        print(f"Train perplexity: {train_eval}\n Validation perplexity: {valid_eval}")
+    if model.model_type == "Question Answering model":
+        print(f"Train cross entropy loss: {train_eval}\n Validation cross entropy loss: {valid_eval}")
 
 if __name__ == '__main__':
-    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering") #"question_answering" "language_modeling"
+    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="language_modeling") #"question_answering" "language_modeling"
     train_model(model, train_dataset, valid_dataset, config)
+    evaluate_model(model, train_dataset, valid_dataset)

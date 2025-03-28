@@ -2,6 +2,7 @@ import os
 import torch
 import pickle
 import yaml
+import shutil
 from torch.utils.data import Dataset
 
 root_path = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
@@ -56,6 +57,14 @@ def load_config(config_name):
     with open(os.path.join(root_path, "config", f"{config_name}.yaml"), "r") as f:
         config = yaml.safe_load(f)
     return config
+
+def zip_folder(folder_to_zip):
+    base_dir = os.path.dirname(folder_to_zip)
+    folder_name = os.path.basename(folder_to_zip)
+    shutil.make_archive(folder_to_zip, 'zip',  folder_name)
+
+def extract_zipped_folder(zipped_folder_path):
+    shutil.unpack_archive(zipped_folder_path, zipped_folder_path.split('.')[0])
 
 if __name__ == '__main__':
     pass

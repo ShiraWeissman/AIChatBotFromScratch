@@ -1,7 +1,10 @@
 import os
 import torch
+import shutil
 from torch import nn
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModelForQuestionAnswering
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 from src.utils import *
 
 
@@ -10,34 +13,78 @@ class DistilGPT2ForLanguageModeling(nn.Module):
     Custom class for training a DistilGPT-2 model with pre-tokenized data.
     """
 
-    def __init__(self, pretrained_model_name="distilgpt2"):
+    def __init__(self, pretrained_model_name="distilgpt2", pretrained_tokenizer_name="distilgpt2"):
         super().__init__()  # Inherit from nn.Module, not AutoModelForCausalLM
+        self.model_type = "Language model"
+        self.pretrained_model_name = pretrained_model_name
+        self.pretrained_tokenizer_name = pretrained_tokenizer_name
 
-        print("Loading configuration...")
-        self.config = AutoConfig.from_pretrained(pretrained_model_name)
-
-        print("Loading model...")
-        self.model = AutoModelForCausalLM.from_config(self.config)
-
+        if self.pretrained_model_name[-3:] == 'zip':
+            print("Extracting zipped model..")
+            extract_zipped_folder(os.path.join(root_path, self.pretrained_model_name))
+            self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name.split('.')[0])
+            print("Loading model..")
+            self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
+        elif os.path.exists(os.path.join(root_path, self.pretrained_model_name)):
+            self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name)
+            print("Loading model..")
+            self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
+        elif self.pretrained_model_name == "distilgpt2":
+            print("Loading configuration...")
+            self.config = AutoConfig.from_pretrained(self.pretrained_model_name)
+            print("Loading model...")
+            self.model = AutoModelForCausalLM.from_config(self.config)
+        else:
+            print("Invalid pretrained_model_name")
+            return
         print("Loading tokenizer...")
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
-
+        self.tokenizer = AutoTokenizer.from_pretrained(self.pretrained_tokenizer_name)
         print("Setting padding token...")
-        self.tokenizer.pad_token = self.tokenizer.eos_token  # GPT-2 doesn't have a pad token by default
+        self.tokenizer.pad_token = self.tokenizer.eos_token
 
     def forward(self, input_ids, attention_mask, labels=None):
         return self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+
+    def evaluate(self, dataset, batch_size=8, device='cuda' if torch.cuda.is_available() else 'cpu'):
+        """
+        Evaluates the model on a given dataset and returns the perplexity.
+        """
+        self.model.to(device)
+        self.model.eval()
+
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        total_loss = 0.0
+        total_tokens = 0
+
+        with torch.no_grad():
+            for batch in tqdm(dataloader, desc="Evaluating"):
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                labels = input_ids.clone()
+
+                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs.loss
+
+                total_loss += loss.item() * input_ids.size(0)
+                total_tokens += torch.sum(attention_mask).item()
+
+        avg_loss = total_loss / total_tokens
+        perplexity = torch.exp(torch.tensor(avg_loss))
+
+        return perplexity.item()
+
 
     def save_model(self, save_path="models/distilgpt2_lm"):
         """ Save the trained model and tokenizer correctly """
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
+        shutil.make_archive(save_path, 'zip', save_path)
 
-    def load_model(self, model_path="models/distilgpt2_lm"):
-        """ Load the trained model and tokenizer """
-        print("Loading trained model from:", model_path)
-        self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Load model correctly
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+    # def load_model(self, model_path="models/distilgpt2_lm"):
+    #     """ Load the trained model and tokenizer """
+    #     print("Loading trained model from:", model_path)
+    #     self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Load model correctly
+    #     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 
 class DistilGPT2ForQuestionAnswering(nn.Module):
@@ -46,19 +93,67 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
     Uses causal language modeling to generate answers based on a question and context.
     """
 
-    def __init__(self, pretrained_model_name="distilgpt2"):
+    def __init__(self, pretrained_model_name="distilgpt2", pretrained_tokenizer_name="distilgpt2"):
         super().__init__()  # Fix: Initialize nn.Module correctly
 
+        self.model_type = "Question Answering model"
+        self.pretrained_model_name = pretrained_model_name
+        self.pretrained_tokenizer_name = pretrained_tokenizer_name
         print("Loading model...")
-        self.model = AutoModelForCausalLM.from_pretrained(pretrained_model_name)
+        if self.pretrained_model_name[-3:] == 'zip':
+            print("Extracting zipped model..")
+            extract_zipped_folder(os.path.join(root_path, self.pretrained_model_name))
+            self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name.split('.')[0])
+            print("Loading model..")
+            self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
+        elif os.path.exists(os.path.join(root_path, self.pretrained_model_name)):
+            self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name)
+            self.pretrained_tokenizer_name = pretrained_model_name
+            print("Loading model..")
+            self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
+        elif self.pretrained_model_name == "distilgpt2":
+            print("Loading configuration...")
+            self.config = AutoConfig.from_pretrained(self.pretrained_model_name)
+            print("Loading model...")
+            self.model = AutoModelForCausalLM.from_config(self.config)
+        else:
+            print("Invalid pretrained_model_name")
+            return
 
         print("Loading tokenizer...")
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_tokenizer_name)
 
         print("Setting padding token...")
-        self.tokenizer.pad_token = self.tokenizer.eos_token  # GPT-2 doesn’t have a pad token
+        self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def generate_answer(self, question, config, context="Fairy tales", max_length=50):
+    def evaluate(self, dataset, batch_size=8, device='cuda' if torch.cuda.is_available() else 'cpu'):
+        """
+        Evaluates the model on a given question-answer dataset.
+        Computes loss as a measure of performance.
+        """
+        self.model.to(device)
+        self.model.eval()
+
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        total_loss = 0.0
+        total_samples = 0
+
+        with torch.no_grad():
+            for batch in tqdm(dataloader, desc="Evaluating"):
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                labels = batch["labels"].to(device)
+
+                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs.loss
+
+                total_loss += loss.item() * input_ids.size(0)
+                total_samples += input_ids.size(0)
+
+        avg_loss = total_loss / total_samples
+        return avg_loss
+
+    def generate_answer(self, question, config, context="Fairy tales"):
         """
         Generates an answer given a context and a question.
         """
@@ -83,54 +178,24 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
         """ Saves the trained model and tokenizer correctly """
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
+        zip_folder(save_path)
 
-    def load_model(self, model_path="models/distilgpt2_qa"):
-        """ Loads a fine-tuned model and tokenizer correctly """
-        print(f"Loading model from {model_path}...")
-        self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Fix: Correct loading method
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+    # def load_model(self, model_path="models/distilgpt2_qa"):
+    #     """ Loads a fine-tuned model and tokenizer correctly """
+    #     print(f"Loading model from {model_path}...")
+    #     if os.path.exists(os.path.join(root_path, model_path)):
+    #         model_path = os.path.join(root_path, model_path)
+    #     elif os.path.exists(model_path):
+    #         pass
+    #     else:
+    #         print("In valid model_path")
+    #         return
+    #     self.model = AutoModelForCausalLM.from_pretrained(model_path)
+    #     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-    # def generate_answer(self, context, question, max_length=50):
-    #     """
-    #     Generates an answer given a context and a question.
-    #     """
-    #     input_text = f"Context: {context} Question: {question} Answer:"
-    #     input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids
-    #
-    #     output_ids = self.model.generate(input_ids, max_length=max_length, pad_token_id=self.tokenizer.eos_token_id)
-    #     return self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
-
-    # def generate(self, prompt, max_length=50, do_sample=True, top_k=50, top_p=0.95, temperature=0.7):
-    #     """
-    #     Generates text based on the provided prompt using causal language modeling.
-    #     This can be used for more general text generation (e.g., story generation, creative text, etc.).
-    #     """
-    #     # Tokenize the prompt and create an attention mask
-    #     encoding = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
-    #     input_ids = encoding.input_ids.to(self.model.device)  # Ensure input_ids are on the correct device
-    #     attention_mask = encoding.attention_mask.to(self.model.device)  # Attention mask for padding tokens
-    #
-    #     # Generate text using the model
-    #     output_ids = self.model.generate(
-    #         input_ids,
-    #         attention_mask=attention_mask,  # Pass attention mask
-    #         max_length=max_length,
-    #         pad_token_id=self.tokenizer.eos_token_id,
-    #         do_sample=do_sample,  # Enables randomness for creative text
-    #         top_k=top_k,  # Limits to top K words per step
-    #         top_p=top_p,  # Nucleus sampling
-    #         temperature=temperature  # Controls randomness (lower = more deterministic)
-    #     )
-    #
-    #     # Convert tensor to list for decoding
-    #     output_ids = output_ids[0].cpu().numpy().tolist()
-    #
-    #     # Decode the output_ids to a string
-    #     output_text = self.tokenizer.decode(output_ids, skip_special_tokens=True)
-    #     return output_text
-
-
-def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2", checkpoint_path=None):
+def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2",
+               pretrained_tokenizer_name="distligpt2",
+               checkpoint_path=None):
     """
     Load the appropriate Distilgpt2 model for the given task.
 
@@ -144,16 +209,15 @@ def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2"
     """
     if task_type.lower() == "language_modeling":
         print("Loading DistilGPT2ForLanguageModeling..")
-        model = DistilGPT2ForLanguageModeling(pretrained_model_name)
+        model = DistilGPT2ForLanguageModeling(pretrained_model_name, pretrained_tokenizer_name)
     elif task_type.lower() == "question_answering":
         print("Loading DistilGPT2ForQuestionAnswering..")
-        model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
-        # model = DistilGPT2ForQuestionAnswering(pretrained_model_name)
+        model = DistilGPT2ForQuestionAnswering(pretrained_model_name, pretrained_tokenizer_name)
     else:
         raise ValueError("Invalid task_type. Choose 'language_modeling' or 'question_answering'.")
 
-    if checkpoint_path:
-        model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device("cpu")))
-        print(f"Loaded model weights from {checkpoint_path}")
+    # if checkpoint_path:
+    #     model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device("cpu")))
+    #     print(f"Loaded model weights from {checkpoint_path}")
 
     return model
