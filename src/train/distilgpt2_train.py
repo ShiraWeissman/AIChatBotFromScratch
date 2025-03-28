@@ -28,10 +28,10 @@ def prepare_for_training(task_type):
     valid_dataset = CustomDataset(dataset_path, dataset_type, split='validation', model_type='distilgpt2')
 
     print('Loading model..')
-    if bool(pretrained_model_path):
-        model = load_model(task_type=dataset_type, pretrained_model_name=os.path.join(root_path, pretrained_model_path)).to(device)
-    else:
-        model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name,
+    # if bool(pretrained_model_path):
+    #     model = load_model(task_type=dataset_type, pretrained_model_name=os.path.join(root_path, pretrained_model_path)).to(device)
+    # else:
+    model = load_model(task_type=dataset_type, pretrained_model_name=pretrained_model_name,
                            pretrained_tokenizer_name=pretrained_tokenizer_name).to(device)
 
     return model, train_dataset, valid_dataset, config
@@ -92,6 +92,6 @@ def evaluate_model(model, train_dataset, valid_dataset):
         print(f"Train cross entropy loss: {train_eval}\n Validation cross entropy loss: {valid_eval}")
 
 if __name__ == '__main__':
-    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="language_modeling") #"question_answering" "language_modeling"
-    train_model(model, train_dataset, valid_dataset, config)
+    model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering") #"question_answering" "language_modeling"
+    #train_model(model, train_dataset, valid_dataset, config)
     evaluate_model(model, train_dataset, valid_dataset)

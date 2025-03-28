@@ -59,9 +59,14 @@ def load_config(config_name):
     return config
 
 def zip_folder(folder_to_zip):
-    base_dir = os.path.dirname(folder_to_zip)
+    original_root = os.getcwd()
+    if os.path.basename(original_root) == 'AIChatBotFromScratch':
+      os.chdir(os.path.join(original_root))
+    else:
+      os.chdir(os.path.join(original_root,  'AIChatBotFromScratch'))
     folder_name = os.path.basename(folder_to_zip)
     shutil.make_archive(folder_to_zip, 'zip',  folder_name)
+    os.chdir(original_root)
 
 def extract_zipped_folder(zipped_folder_path):
     shutil.unpack_archive(zipped_folder_path, zipped_folder_path.split('.')[0])
