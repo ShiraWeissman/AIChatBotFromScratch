@@ -1,1 +1,2 @@
 models/distilgpt2_LM_model.zip filter=lfs diff=lfs merge=lfs -text
+models/distilgpt2_QA_model.zip filter=lfs diff=lfs merge=lfs -text
