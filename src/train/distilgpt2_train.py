@@ -23,7 +23,7 @@ def prepare_for_training(task_type):
     # Ensure checkpoint directory exists
     os.makedirs(os.path.join(root_path, checkpoint_dir), exist_ok=True)
     print('Loading dataset..')
-    dataset_path = os.path.join(root_path, data_path, f"{dataset_name}_{model_type}_preprocessed.pkl")
+    dataset_path = os.path.join(root_path, data_path, f"{dataset_name}_{model_type}_preprocessed")
     train_dataset = CustomDataset(dataset_path, dataset_type, split='train', model_type='distilgpt2')
     valid_dataset = CustomDataset(dataset_path, dataset_type, split='validation', model_type='distilgpt2')
 
