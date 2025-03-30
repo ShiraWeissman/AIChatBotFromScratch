@@ -25,7 +25,7 @@ question_answering:
   dataset_name: "fairytaleqa"
   data_path: "data/processed"
   checkpoint_dir: "models/distilgpt2_QA_model/checkpoints"
-  pretrained_model_name: "models/distilgpt2_LM_model"
+  pretrained_model_name: "models/distilgpt2_LM_model.zip"
   pretrained_model_path: null
   pretrained_tokenizer_path: null
   pretrained_tokenizer_name: "distilgpt2"

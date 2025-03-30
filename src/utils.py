@@ -65,7 +65,7 @@ def zip_folder(folder_to_zip):
     else:
       os.chdir(os.path.join(original_root,  'AIChatBotFromScratch'))
     folder_name = os.path.basename(folder_to_zip)
-    shutil.make_archive(folder_to_zip, 'zip',  folder_name)
+    shutil.make_archive(folder_to_zip, 'zip',  folder_to_zip)
     os.chdir(original_root)
 
 def extract_zipped_folder(zipped_folder_path):
