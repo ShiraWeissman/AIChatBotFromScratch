@@ -14,10 +14,18 @@ language_modeling:
     batch_size: 16
     epochs: 3
     learning_rate: 5e-5
+    weight_decay: 0.01
+    warmup_steps: 500
+    lr_scheduler_type: "cosine"
     evaluation_strategy: "epoch"
     save_strategy: "epoch"
     save_total_limit: 2
     logging_steps: 100
+    per_device_train_batch_size: 64
+    gradient_accumulation_steps: 2
+    fp16: True,
+    bf16: True,
+    optim: "adamw_torch"
   device: "cuda"  # "cuda" for GPU, "cpu" for CPU
   save_path: "models/distilgpt2_LM_model"
 question_answering:
@@ -36,5 +44,13 @@ question_answering:
     batch_size: 16
     epochs: 3
     learning_rate: 5e-5
+    weight_decay: 0.01
+    warmup_steps: 500
+    lr_scheduler_type: "cosine"
+    per_device_train_batch_size: 64
+    gradient_accumulation_steps: 2
+    fp16: True,
+    bf16: True,
+    optim: "adamw_torch"
   device: "cuda"  # "cuda" for GPU, "cpu" for CPU
   save_path: "models/distilgpt2_QA_model"

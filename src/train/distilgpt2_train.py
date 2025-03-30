@@ -16,7 +16,6 @@ def prepare_for_training(task_type):
     data_path = config["data_path"]
     checkpoint_dir = config["checkpoint_dir"]
     pretrained_model_name = config["pretrained_model_name"]
-    pretrained_model_path = config["pretrained_model_path"]
     pretrained_tokenizer_name = config["pretrained_tokenizer_name"]
     model_type = config["model_type"]
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
@@ -45,9 +44,6 @@ def train_model(model, train_dataset, valid_dataset, config):
     batch_size = int(config["training"]["batch_size"])
     device = config["device"]
     dataset_type = config["dataset_type"]
-    dataset_type_short = 'lm' if dataset_type == "language_modeling" else 'qa'
-    checkpoint_dir = config["checkpoint_dir"]
-    dataset_name = config["dataset_name"]
     save_path = os.path.join(root_path, config["save_path"])
     # # Load preprocessed dataset
     # tokenized_dataset = dataloader
@@ -60,13 +56,20 @@ def train_model(model, train_dataset, valid_dataset, config):
         output_dir=save_path,
         eval_strategy="epoch",
         save_strategy="epoch",
-        per_device_train_batch_size=batch_size,
-        per_device_eval_batch_size=batch_size,
-        num_train_epochs=epochs,
-        save_total_limit=2,
+        learning_rate=float(config['training']['learning_rate']),  # Recommended learning rate for fine-tuning
+        weight_decay=float(config['training']['weight_decay']),  # Weight decay to prevent overfitting
+        warmup_steps=int(config['training']['warmup_steps']),  # Gradual warm-up of learning rate
+        lr_scheduler_type=config['training']['lr_scheduler_type'],  # Cosine learning rate decay
+        per_device_train_batch_size=int(config['training']['per_device_train_batch_size']),
+        per_device_eval_batch_size=int(config['training']['per_device_train_batch_size']),
+        num_train_epochs=int(config["training"]["epochs"]),
+        save_total_limit=int(config["training"]["save_total_limit"]),
         logging_dir=f"{save_path}/logs",
-        logging_steps=100,
-        report_to=config["report_to"] if bool(config["report_to"]) else "none"
+        logging_steps=int(config["training"]["logging_steps"]),
+        report_to=config["report_to"] if bool(config["report_to"]) else "none",
+        fp16=bool(config["training"]["fp16"]),
+        bf16=bool(config["training"]["bf16"]),
+        optim=config["training"]["optim"]
     )
 
     # Trainer setup
