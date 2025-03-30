@@ -13,8 +13,8 @@ DATASETS = {
 }
 
 # Define paths for processed data storage
-PROCESSED_DIR = os.path.join(root_path, "data/processed/")
-os.makedirs(PROCESSED_DIR, exist_ok=True)
+processed_dir = os.path.join(root_path, "data/processed/")
+os.makedirs(processed_dir, exist_ok=True)
 
 # Initialize tokenizers
 distilbert_tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
@@ -29,7 +29,7 @@ def lstm_tokenize(text):
 
 # Function to check if processed data exists
 def check_existing_files(model_type, dataset_name):
-    file_path = os.path.join(PROCESSED_DIR, f"{dataset_name}_{model_type}_preprocessed.pkl")
+    file_path = os.path.join(processed_dir, f"{dataset_name}_{model_type}_preprocessed.pkl")
     return file_path if os.path.exists(file_path) else None
 
 
@@ -168,9 +168,9 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
 
     # Save processed data
-    save_path = os.path.join(PROCESSED_DIR, f"{dataset_name}_{model_type}_preprocessed.pkl")
-    with open(save_path, "wb") as f:
-        pickle.dump(dataset, f)
+    save_path = os.path.join(processed_dir, f"{dataset_name}_{model_type}_preprocessed")
+    dataset.save_to_disk(save_path)
+
 
     print(f"Processed dataset saved at {save_path}")
     return dataset
@@ -179,8 +179,10 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 # Example Usage
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
-    tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000, model_type="distilgpt2")
-    fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=100, model_type="distilgpt2")
+    tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=300000,
+                                                         model_type="distilgpt2", force_reprocess=True)
+    fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
+                                                         model_type="distilgpt2", force_reprocess=True)
     # Load & preprocess for DistilBERT
     #tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
     #fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")

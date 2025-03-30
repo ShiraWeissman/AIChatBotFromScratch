@@ -1,6 +1,7 @@
 import os
 import torch
 import pickle
+from datasets import load_from_disk
 import yaml
 import shutil
 from torch.utils.data import Dataset
@@ -10,8 +11,7 @@ root_path = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
 
 class CustomDataset(Dataset):
     def __init__(self, data_path, dataset_type, split="train", model_type='distilgpt2'):
-        with open(data_path, "rb") as f:
-            self.data = pickle.load(f)
+        self.data = load_from_disk(data_path)
 
         if split not in ["train", "validation"]:
             raise ValueError("split must be either 'train' or 'validation'")
