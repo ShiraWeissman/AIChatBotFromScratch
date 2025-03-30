@@ -67,7 +67,6 @@ def train_model(model, train_dataset, valid_dataset, config):
         logging_dir=f"{save_path}/logs",
         logging_steps=int(config["training"]["logging_steps"]),
         report_to=config["report_to"] if bool(config["report_to"]) else "none",
-        fp16=bool(config["training"]["fp16"]),
         bf16=bool(config["training"]["bf16"]),
         optim=config["training"]["optim"]
     )
