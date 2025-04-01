@@ -1,40 +1,26 @@
-import os
-import pickle
-import torch
 from datasets import load_dataset
 from transformers import DistilBertTokenizer, AutoTokenizer
-import numpy as np
 from src.utils import *
 
-# Define dataset names
 DATASETS = {
     "tinystories": "roneneldan/TinyStories",
     "fairytaleqa": "GEM/FairytaleQA"
 }
 
-# Define paths for processed data storage
 processed_dir = os.path.join(root_path, "data/processed/")
 os.makedirs(processed_dir, exist_ok=True)
 
-# Initialize tokenizers
 distilbert_tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 
 distilgpt2_tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
 distilgpt2_tokenizer.pad_token = distilgpt2_tokenizer.eos_token
 
-# Dummy function for LSTM (Word2Vec/GloVe embeddings would be handled separately)
-def lstm_tokenize(text):
-    return text.lower().split()
-
-
-# Function to check if processed data exists
 def check_existing_files(model_type, dataset_name):
     file_path = os.path.join(processed_dir, f"{dataset_name}_{model_type}_preprocessed.pkl")
     return file_path if os.path.exists(file_path) else None
 
 
-# Function to preprocess dataset
-def preprocess_text(raw, model_type="distilbert", dataset_name="tinystories"):
+def preprocess_text(raw, model_type="distilgpt2", dataset_name="tinystories"):
     """Preprocesses text for the chosen model type (DistilBERT for QA or LSTM) and dataset (TinyStories or FairytaleQA)."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -109,43 +95,15 @@ def preprocess_text(raw, model_type="distilbert", dataset_name="tinystories"):
             return tokenized_output
 
 
-    elif model_type == "lstm":
-        if dataset_name == "tinystories":
-            # Tokenization for TinyStories using LSTM
-            tokens = lstm_tokenize(raw["text"])
-            tokens_tensor = torch.tensor(tokens).to(device)
-            return {"tokens": tokens_tensor}
-
-        elif dataset_name == "fairytaleQA":
-            # FairytaleQA-specific preprocessing for LSTM
-            # Tokenize context (story) and question separately
-            context = raw["story"]
-            question = raw["question"]
-
-            context_tokens = lstm_tokenize(context)
-            question_tokens = lstm_tokenize(question)
-
-            # Combine the tokens into a single tensor or process as needed
-            context_tensor = torch.tensor(context_tokens).to(device)
-            question_tensor = torch.tensor(question_tokens).to(device)
-
-            return {"context_tokens": context_tensor, "question_tokens": question_tensor}
-
-    return raw
-
-
-
-# Function to load and preprocess dataset
 def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_size=10000, force_reprocess=False):
     """
     Loads the dataset from Hugging Face and preprocesses it for the specified model type.
     :param dataset_name: Name of the dataset (e.g., 'tinystories' or 'fairytaleqa').
-    :param model_type: 'distilbert' or 'lstm'.
+    :param model_type: 'distilgpt2' or 'distilbert'.
     :param force_reprocess: If True, forces reprocessing even if a saved file exists.
     :return: Preprocessed dataset.
     """
     dataset_name = dataset_name.lower()
-    # Check for existing preprocessed file
     processed_file = check_existing_files(model_type, dataset_name)
 
     if processed_file and not force_reprocess:
@@ -153,7 +111,6 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
         with open(processed_file, "rb") as f:
             return pickle.load(f)
 
-    # Load dataset from Hugging Face
     dataset_path = DATASETS.get(dataset_name)
     if not dataset_path:
         raise ValueError(f"Dataset {dataset_name} not found in available datasets.")
@@ -163,23 +120,21 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     if len(dataset['train']) > sample_size:
         dataset["train"] = dataset["train"].select(range(sample_size))
         print(len(dataset['train']))
-    # Apply preprocessing
+
     print(f"Preprocessing {dataset_name} for {model_type} model...")
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
 
-    # Save processed data
     save_path = os.path.join(processed_dir, f"{dataset_name}_{model_type}_preprocessed")
     dataset.save_to_disk(save_path)
-
 
     print(f"Processed dataset saved at {save_path}")
     return dataset
 
 
-# Example Usage
+
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
-    tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=300000,
+    tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000,
                                                          model_type="distilgpt2", force_reprocess=True)
     fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
                                                          model_type="distilgpt2", force_reprocess=True)
@@ -187,6 +142,3 @@ if __name__ == "__main__":
     #tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
     #fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")
 
-    # Load & preprocess for LSTM
-    # tinystories_lstm = load_and_preprocess_dataset("tinystories", model_type="lstm")
-    # fairytaleqa_lstm = load_and_preprocess_dataset("fairytaleqa", model_type="lstm")
