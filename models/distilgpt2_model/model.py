@@ -1,8 +1,5 @@
-import os
-import torch
-import shutil
 from torch import nn
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModelForQuestionAnswering
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from src.utils import *
@@ -14,7 +11,7 @@ class DistilGPT2ForLanguageModeling(nn.Module):
     """
 
     def __init__(self, pretrained_model_name="distilgpt2", pretrained_tokenizer_name="distilgpt2"):
-        super().__init__()  # Inherit from nn.Module, not AutoModelForCausalLM
+        super().__init__()
         self.model_type = "Language model"
         self.pretrained_model_name = pretrained_model_name
         self.pretrained_tokenizer_name = pretrained_tokenizer_name
@@ -80,12 +77,6 @@ class DistilGPT2ForLanguageModeling(nn.Module):
         self.tokenizer.save_pretrained(save_path)
         shutil.make_archive(save_path, 'zip', save_path)
 
-    # def load_model(self, model_path="models/distilgpt2_lm"):
-    #     """ Load the trained model and tokenizer """
-    #     print("Loading trained model from:", model_path)
-    #     self.model = AutoModelForCausalLM.from_pretrained(model_path)  # Load model correctly
-    #     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-
 
 class DistilGPT2ForQuestionAnswering(nn.Module):
     """
@@ -94,7 +85,7 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
     """
 
     def __init__(self, pretrained_model_name="distilgpt2", pretrained_tokenizer_name="distilgpt2"):
-        super().__init__()  # Fix: Initialize nn.Module correctly
+        super().__init__()
 
         self.model_type = "Question Answering model"
         self.pretrained_model_name = pretrained_model_name
@@ -175,35 +166,19 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
         return self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
     def save_model(self, save_path="models/distilgpt2_qa"):
-        """ Saves the trained model and tokenizer correctly """
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
         zip_folder(save_path)
 
-    # def load_model(self, model_path="models/distilgpt2_qa"):
-    #     """ Loads a fine-tuned model and tokenizer correctly """
-    #     print(f"Loading model from {model_path}...")
-    #     if os.path.exists(os.path.join(root_path, model_path)):
-    #         model_path = os.path.join(root_path, model_path)
-    #     elif os.path.exists(model_path):
-    #         pass
-    #     else:
-    #         print("In valid model_path")
-    #         return
-    #     self.model = AutoModelForCausalLM.from_pretrained(model_path)
-    #     self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2",
-               pretrained_tokenizer_name="distilgpt2",
-               checkpoint_path=None):
+               pretrained_tokenizer_name="distilgpt2"):
     """
     Load the appropriate Distilgpt2 model for the given task.
 
     Args:
         task_type (str): "language_modeling" or "question_answering"
         model_name (str): Pretrained model name
-        checkpoint_path (str, optional): Path to checkpoint file
-
     Returns:
         model (): Loaded model instance
     """
@@ -215,9 +190,5 @@ def load_model(task_type="language_modeling", pretrained_model_name="distilgpt2"
         model = DistilGPT2ForQuestionAnswering(pretrained_model_name, pretrained_tokenizer_name)
     else:
         raise ValueError("Invalid task_type. Choose 'language_modeling' or 'question_answering'.")
-
-    # if checkpoint_path:
-    #     model.load_state_dict(torch.load(checkpoint_path, map_location=torch.device("cpu")))
-    #     print(f"Loaded model weights from {checkpoint_path}")
 
     return model

@@ -1,17 +1,13 @@
 language_modeling:
-  dataset_type: "language_modeling"  # "language_modeling" for TinyStories, "question_answering" for FairytaleQA
+  dataset_type: "language_modeling"
   dataset_name: "tinystories"
   data_path: "data/processed"
-  checkpoint_dir: "models/distilgpt2_LM_model/checkpoints"
-  pretrained_model_path: null
   pretrained_model_name: "distilgpt2"
-  pretrained_tokenizer_path: null
   pretrained_tokenizer_name: "distilgpt2"
   model_type: "distilgpt2"
   report_to: null
 
   training:
-    batch_size: 16
     epochs: 3
     learning_rate: 5e-5
     weight_decay: 0.01
@@ -28,24 +24,24 @@ language_modeling:
   device: "cuda"  # "cuda" for GPU, "cpu" for CPU
   save_path: "models/distilgpt2_LM_model"
 question_answering:
-  dataset_type: "question_answering"  # "language_modeling" for TinyStories, "question_answering" for FairytaleQA
+  dataset_type: "question_answering"
   dataset_name: "fairytaleqa"
   data_path: "data/processed"
-  checkpoint_dir: "models/distilgpt2_QA_model/checkpoints"
   pretrained_model_name: "models/distilgpt2_LM_model.zip"
-  pretrained_model_path: null
-  pretrained_tokenizer_path: null
   pretrained_tokenizer_name: "distilgpt2"
   model_type: "distilgpt2"
   report_to: null
 
   training:
-    batch_size: 16
-    epochs: 3
+    epochs: 4
     learning_rate: 5e-5
     weight_decay: 0.01
     warmup_steps: 500
     lr_scheduler_type: "cosine"
+    evaluation_strategy: "epoch"
+    save_strategy: "epoch"
+    save_total_limit: 2
+    logging_steps: 100
     per_device_train_batch_size: 64
     gradient_accumulation_steps: 2
     bf16: True,
