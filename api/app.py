@@ -27,7 +27,7 @@ def generate_answer():
         if not context or not question:
             return jsonify({"error": "Context or question missing"}), 400
 
-        answer = model.generate_answer(question, config, context=context, max_length=50)
+        answer = model.generate_answer(question, config, context=context)
         return render_template("index.html", context=context, question=question, answer=answer)
     except Exception as e:
         print("Error in /generate_answer:", e)

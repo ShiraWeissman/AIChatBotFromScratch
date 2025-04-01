@@ -14,7 +14,7 @@ def generate_response(question, model, config):
     """
     Generate text using the trained DistilGPT-2 model.
     """
-    response = model.generate_answer(question, config, context="Fairy tales",  max_length=50)
+    response = model.generate_answer(question, config, context="Fairy tales")
 
     return response
 
@@ -22,7 +22,7 @@ def generate_response(question, model, config):
 if __name__ == '__main__':
     config = load_config("distilgpt2_inference_config")
     model = load_model(task_type="question_answering",
-                       pretrained_model_name='distilgpt2') #os.path.join(root_path, config["model"]["path"])
+                       pretrained_model_name='models/distilgpt2_QA_model.zip') #os.path.join(root_path, config["model"]["path"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     question = "What is the most common hero name?"
