@@ -139,6 +139,8 @@ if __name__ == "__main__":
     fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
                                                          model_type="distilgpt2", force_reprocess=True)
     # Load & preprocess for DistilBERT
-    #tinystories_distilbert = load_and_preprocess_dataset("tinystories", model_type="distilbert")
-    #fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", model_type="distilbert")
+    # tinystories_distilbert = load_and_preprocess_dataset("tinystories", sample_size=10000,
+    #                                                      model_type="distilbert", force_reprocess=True)
+    # fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
+    #                                                      model_type="distilbert", force_reprocess=True)
 
