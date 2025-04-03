@@ -72,7 +72,6 @@ class DistilGPT2ForLanguageModeling(nn.Module):
 
 
     def save_model(self, save_path="models/distilgpt2_lm"):
-        """ Save the trained model and tokenizer correctly """
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
         shutil.make_archive(save_path, 'zip', save_path)
