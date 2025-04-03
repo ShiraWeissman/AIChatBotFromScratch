@@ -25,7 +25,7 @@ language_modeling:
   save_path: "models/distilbert_LM_model"
 question_answering:
   dataset_type: "question_answering"
-  dataset_name: "fairytaleQA"
+  dataset_name: "fairytaleqa"
   data_path: "data/processed"
   pretrained_model_name: "models/distilbert_LM_model.zip"
   pretrained_tokenizer_name: "distilbert-base-uncased"
