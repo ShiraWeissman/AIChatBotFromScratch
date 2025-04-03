@@ -76,6 +76,15 @@ def train_model(model, train_dataset, valid_dataset, config):
     print(f"Model saved at {save_path}")
 
 
+def evaluate_model(model, train_dataset, valid_dataset):
+    train_eval = model.evaluate(train_dataset)
+    valid_eval = model.evaluate(valid_dataset)
+    if model.model_type == "Language model":
+        print(f"Train perplexity: {train_eval}\n Validation perplexity: {valid_eval}")
+    if model.model_type == "Question Answering model":
+        print(f"Train cross entropy loss: {train_eval}\n Validation cross entropy loss: {valid_eval}")
+
+
 if __name__ == "__main__":
     # task type options: "language_modeling" or "question_answering"
     model, train_dataset, valid_dataset, config = prepare_for_training(task_type="question_answering")
