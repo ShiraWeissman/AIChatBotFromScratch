@@ -2,18 +2,16 @@ import os
 from flask import Flask, request, jsonify, render_template
 import torch
 from src.utils import load_config, root_path
-from models.distilgpt2_model.model import DistilGPT2ForQuestionAnswering
+from models.distilgpt2_model.model import load_model
 
 app = Flask(__name__)
 
-# Load configuration
 config = load_config("distilgpt2_inference_config")
 
-# Initialize the model with configuration
-model = DistilGPT2ForQuestionAnswering(pretrained_model_name=config["model"]["path"])
+model = load_model(task_type="question_answering", pretrained_model_name=config["model"]["path"])
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-
+print()
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -34,4 +32,4 @@ def generate_answer():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)

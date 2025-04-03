@@ -1,5 +1,5 @@
 model:
-  path: "models/distilgpt2_QA_model" #"models/distilgpt2_model"  # Path to the trained model directory
+  path: "models/distilgpt2_QA_model.zip" #"models/distilgpt2_model"  # Path to the trained model directory
   device: "cpu"  # Set to "cuda" for GPU, "cpu" for CPU
 
 inference:

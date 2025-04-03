@@ -27,7 +27,7 @@ def test_generate_answer():
     if response.status_code == 200:
         print("Test 2 (Generate Answer) passed")
         soup = BeautifulSoup(response.text, "html.parser")
-        answer_tag = soup.find("h2", text="Generated Answer:")
+        answer_tag = soup.find("h2", string="Generated Answer:")
         if answer_tag:
             answer_p = answer_tag.find_next("p")
             if answer_p:
