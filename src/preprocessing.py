@@ -134,13 +134,13 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
-    tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000,
-                                                         model_type="distilgpt2", force_reprocess=True)
-    fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
-                                                         model_type="distilgpt2", force_reprocess=True)
+    # tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000,
+    #                                                      model_type="distilgpt2", force_reprocess=True)
+    # fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
+    #                                                      model_type="distilgpt2", force_reprocess=True)
     # Load & preprocess for DistilBERT
-    # tinystories_distilbert = load_and_preprocess_dataset("tinystories", sample_size=10000,
-    #                                                      model_type="distilbert", force_reprocess=True)
-    # fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
-    #                                                      model_type="distilbert", force_reprocess=True)
+    tinystories_distilbert = load_and_preprocess_dataset("tinystories", sample_size=30,
+                                                         model_type="distilbert", force_reprocess=True)
+    fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", sample_size=30,
+                                                         model_type="distilbert", force_reprocess=True)
 

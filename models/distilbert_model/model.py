@@ -28,7 +28,7 @@ class DistilBERTForLanguageModeling(nn.Module):
             print("Loading configuration...")
             self.config = DistilBertConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")
-            self.model = DistilBertForMaskedLM.from_config(self.config)
+            self.model = DistilBertForMaskedLM(self.config)
         else:
             print("Invalid pretrained_model_name")
             return
@@ -99,7 +99,7 @@ class DistilBERTForQuestionAnswering(nn.Module):
             print("Loading configuration...")
             self.config = DistilBertConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")
-            self.model = DistilBertForQuestionAnswering.from_config(self.config)
+            self.model = DistilBertForQuestionAnswering(self.config)
         else:
             print("Invalid pretrained_model_name")
             return
