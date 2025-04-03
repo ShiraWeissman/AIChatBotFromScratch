@@ -69,6 +69,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="tinystories"):
             # Add start and end positions to the tokenized output
             tokenized_output["start_positions"] = torch.tensor(start_position).to(device)
             tokenized_output["end_positions"] = torch.tensor(end_position).to(device)
+            tokenized_output['labels'] = tokenized_output['input_ids']
 
             # Move the tokenized output to the GPU (if available)
             tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
