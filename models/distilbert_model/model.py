@@ -69,7 +69,7 @@ class DistilBERTForLanguageModeling(nn.Module):
     def save_model(self, save_path="models/distilbert_lm"):
         self.model.save_pretrained(save_path)
         self.tokenizer.save_pretrained(save_path)
-        shutil.make_archive(save_path, 'zip', save_path)
+        zip_folder(save_path)
 
 
 class DistilBERTForQuestionAnswering(nn.Module):
@@ -114,6 +114,11 @@ class DistilBERTForQuestionAnswering(nn.Module):
             end_positions=end_positions
         )
         return outputs
+
+    def save_model(self, save_path="models/distilbert_qa"):
+        self.model.save_pretrained(save_path)
+        self.tokenizer.save_pretrained(save_path)
+        zip_folder(save_path)
 
     def evaluate(self, dataset, batch_size=8, device='cuda' if torch.cuda.is_available() else 'cpu'):
         """
