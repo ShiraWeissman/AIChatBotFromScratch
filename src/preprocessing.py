@@ -67,7 +67,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
         if dataset_name == "wikipedia":
             # Wikipedia for DistilGPT2 language modeling
             tokenized_output = distilgpt2_tokenizer(
-                raw["content"], truncation=True, padding="max_length", max_length=256
+                raw["content"], truncation=True, padding="max_length", max_length=512
             )
             tokenized_output["labels"] = tokenized_output["input_ids"]
             tokenized_output = {
