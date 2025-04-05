@@ -3,7 +3,7 @@ from transformers import DistilBertTokenizer, AutoTokenizer
 from src.utils import *
 
 DATASETS = {
-    "wikipedia": "MedRAG/wikipedia",
+    "wikipedia": "wikimedia/wikipedia",
     "trivia_qa": "mandarjoshi/trivia_qa"
 }
 
@@ -29,7 +29,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
     if model_type == "distilbert":
         if dataset_name == "wikipedia":
             tokenized_output = distilbert_tokenizer(
-                raw["content"], padding="max_length", truncation=True, max_length=512
+                raw["text"], padding="max_length", truncation=True, max_length=512
             )
             tokenized_output = {
                 key: torch.tensor(val).to(device) for key, val in tokenized_output.items()
@@ -67,7 +67,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
         if dataset_name == "wikipedia":
             # Wikipedia for DistilGPT2 language modeling
             tokenized_output = distilgpt2_tokenizer(
-                raw["content"], truncation=True, padding="max_length", max_length=512
+                raw["text"], truncation=True, padding="max_length", max_length=512
             )
             tokenized_output["labels"] = tokenized_output["input_ids"]
             tokenized_output = {
@@ -116,10 +116,14 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     if dataset_name == 'trivia_qa':
         dataset = load_dataset(dataset_path,  "unfiltered", trust_remote_code=True)
     elif dataset_name == 'wikipedia':
-        dataset = load_dataset(dataset_path,  trust_remote_code=True)
+        dataset = load_dataset(dataset_path, "20231101.en", trust_remote_code=True)
+    split_idx = int(0.1 * sample_size)
     if len(dataset['train']) > sample_size:
         dataset["train"] = dataset["train"].select(range(sample_size))
+        dataset["validation"] = dataset["train"].select(range(split_idx))
+        dataset["train"] = dataset["train"].select(range(split_idx, sample_size))
         print(len(dataset['train']))
+        print(len(dataset['validation']))
 
     print(f"Preprocessing {dataset_name} for {model_type} model...")
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
