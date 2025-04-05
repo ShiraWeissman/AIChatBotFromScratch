@@ -1,6 +1,6 @@
 language_modeling:
   dataset_type: "language_modeling"
-  dataset_name: "tinystories"
+  dataset_name: "wikipedia"
   data_path: "data/processed"
   pretrained_model_name: "distilgpt2"
   pretrained_tokenizer_name: "distilgpt2"
@@ -25,7 +25,7 @@ language_modeling:
   save_path: "models/distilgpt2_LM_model"
 question_answering:
   dataset_type: "question_answering"
-  dataset_name: "fairytaleqa"
+  dataset_name: "trivia_qa"
   data_path: "data/processed"
   pretrained_model_name: "models/distilgpt2_LM_model.zip"
   pretrained_tokenizer_name: "distilgpt2"
@@ -33,7 +33,7 @@ question_answering:
   report_to: null
 
   training:
-    epochs: 4
+    epochs: 3
     learning_rate: 5e-5
     weight_decay: 0.01
     warmup_steps: 500

@@ -3,8 +3,8 @@ from transformers import DistilBertTokenizer, AutoTokenizer
 from src.utils import *
 
 DATASETS = {
-    "tinystories": "roneneldan/TinyStories",
-    "fairytaleqa": "GEM/FairytaleQA"
+    "wikipedia": "MedRAG/wikipedia",
+    "trivia_qa": "mandarjoshi/trivia_qa"
 }
 
 processed_dir = os.path.join(root_path, "data/processed/")
@@ -20,86 +20,82 @@ def check_existing_files(model_type, dataset_name):
     return file_path if os.path.exists(file_path) else None
 
 
-def preprocess_text(raw, model_type="distilgpt2", dataset_name="tinystories"):
-    """Preprocesses text for the chosen model type (DistilBERT for QA or LSTM) and dataset (TinyStories or FairytaleQA)."""
+def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
+    """Preprocesses text for the chosen model type (DistilBERT for QA or DistilGPT-2 for generation).
+    Supports Wikipedia (for LM) and TriviaQA (for QA).
+    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_type == "distilbert":
-        if dataset_name == "tinystories":
-            # Tokenization for TinyStories using DistilBERT
-            tokenized_output = distilbert_tokenizer(raw["text"], padding="max_length", truncation=True, max_length=512)
-
-            # Move the tokenized output to the GPU (if available)
-            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+        if dataset_name == "wikipedia":
+            tokenized_output = distilbert_tokenizer(
+                raw["content"], padding="max_length", truncation=True, max_length=512
+            )
+            tokenized_output = {
+                key: torch.tensor(val).to(device) for key, val in tokenized_output.items()
+            }
+            tokenized_output["labels"] = tokenized_output["input_ids"]
             return tokenized_output
 
-        elif dataset_name == "fairytaleqa":
-            # FairytaleQA-specific preprocessing for DistilBERT for Question Answering
-            content = raw["content"]
+        elif dataset_name == "trivia_qa":
+            # TriviaQA for extractive QA with DistilBERT
             question = raw["question"]
-            answer = raw["answer"]
+            context = raw["search_results"]["search_context"] if "search_results" in raw else raw.get("context", "")
+            answer = raw["answer"]["value"] if isinstance(raw["answer"], dict) else raw["answer"]
 
-            # Combine the content and question into a single string for tokenization
-            input_text = f"content: {content} question: {question}"
-
-            # Tokenize the combined text (context + question) using DistilBERT tokenizer
-            tokenized_output = distilbert_tokenizer(input_text, padding="max_length", truncation=True, max_length=512)
-
-            # Identify start and end positions for the answer in the tokenized context
-            # Find the answer span in the tokenized input text (this is done by finding the start and end token indices)
-            answer_tokens = distilbert_tokenizer(answer)["input_ids"]
-            start_position = None
-            end_position = None
-
-            # Try to match the answer in the tokenized context to find start and end positions
+            tokenized_output = distilbert_tokenizer(
+                context, question, padding="max_length", truncation=True, max_length=512
+            )
+            answer_tokens = distilbert_tokenizer(answer, add_special_tokens=False)["input_ids"]
             context_tokens = tokenized_output["input_ids"]
-            answer_len = len(answer_tokens)
 
-            for i in range(len(context_tokens) - answer_len + 1):
-                if context_tokens[i:i + answer_len] == answer_tokens:
-                    start_position = i
-                    end_position = i + answer_len - 1
+            start_position, end_position = 0, 0
+            for i in range(len(context_tokens) - len(answer_tokens) + 1):
+                if context_tokens[i:i + len(answer_tokens)] == answer_tokens:
+                    start_position, end_position = i, i + len(answer_tokens) - 1
                     break
 
-            # If no match is found, fallback to a default value (this can be adjusted based on your approach)
-            if start_position is None or end_position is None:
-                start_position = 0
-                end_position = 0
-
-            # Add start and end positions to the tokenized output
             tokenized_output["start_positions"] = torch.tensor(start_position).to(device)
             tokenized_output["end_positions"] = torch.tensor(end_position).to(device)
-            tokenized_output['labels'] = tokenized_output['input_ids']
-
-            # Move the tokenized output to the GPU (if available)
-            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+            tokenized_output = {
+                key: torch.tensor(val).to(device) if not torch.is_tensor(val) else val
+                for key, val in tokenized_output.items()
+            }
             return tokenized_output
 
     elif model_type == "distilgpt2":
-        if dataset_name == "tinystories":
-            # Tokenization for TinyStories using DistilGPT2
-            tokenized_output = distilgpt2_tokenizer(raw["text"], truncation=True, padding="max_length", max_length=256)
-
-            # Move the tokenized output to the GPU (if available)
-            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+        if dataset_name == "wikipedia":
+            # Wikipedia for DistilGPT2 language modeling
+            tokenized_output = distilgpt2_tokenizer(
+                raw["content"], truncation=True, padding="max_length", max_length=256
+            )
+            tokenized_output["labels"] = tokenized_output["input_ids"]
+            tokenized_output = {
+                key: torch.tensor(val).to(device) for key, val in tokenized_output.items()
+            }
             return tokenized_output
-        elif dataset_name == "fairytaleqa":
-            # Combine the content, question and answer into a single string for tokenization
-            input_text = f"Context: {raw['content']} Question: {raw['question']} Answer: {raw['answer']}"
 
-            # Tokenize the combined text (context + question) using DistilBERT tokenizer
-            tokenized_output = distilgpt2_tokenizer(input_text,  truncation=True, padding="max_length", max_length=512)
-            tokenized_output['labels'] = tokenized_output['input_ids']
+        elif dataset_name == "trivia_qa":
+            question = raw["question"]
+            context = raw["search_results"]["search_context"] if "search_results" in raw else raw.get("context", "")
+            answer = raw["answer"]["value"] if isinstance(raw["answer"], dict) else raw["answer"]
 
-            # Move the tokenized output to the GPU (if available)
-            tokenized_output = {key: torch.tensor(val).to(device) for key, val in tokenized_output.items()}
+            input_text = f"Context: {context} Question: {question} Answer: {answer}"
+            tokenized_output = distilgpt2_tokenizer(
+                input_text, truncation=True, padding="max_length", max_length=512
+            )
+            tokenized_output["labels"] = tokenized_output["input_ids"]
+            tokenized_output = {
+                key: torch.tensor(val).to(device) for key, val in tokenized_output.items()
+            }
             return tokenized_output
+
 
 
 def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_size=10000, force_reprocess=False):
     """
     Loads the dataset from Hugging Face and preprocesses it for the specified model type.
-    :param dataset_name: Name of the dataset (e.g., 'tinystories' or 'fairytaleqa').
+    :param dataset_name: Name of the dataset (e.g., 'wikipedia' or 'trivia_qa').
     :param model_type: 'distilgpt2' or 'distilbert'.
     :param force_reprocess: If True, forces reprocessing even if a saved file exists.
     :return: Preprocessed dataset.
@@ -117,7 +113,10 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
         raise ValueError(f"Dataset {dataset_name} not found in available datasets.")
 
     print(f"Downloading {dataset_name} dataset from Hugging Face...")
-    dataset = load_dataset(dataset_path, trust_remote_code=True)
+    if dataset_name == 'trivia_qa':
+        dataset = load_dataset(dataset_path,  "unfiltered", trust_remote_code=True)
+    elif dataset_name == 'wikipedia':
+        dataset = load_dataset(dataset_path,  trust_remote_code=True)
     if len(dataset['train']) > sample_size:
         dataset["train"] = dataset["train"].select(range(sample_size))
         print(len(dataset['train']))
@@ -135,13 +134,13 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
-    # tinystories_distilgpt2 = load_and_preprocess_dataset("tinystories", sample_size=10000,
+    # wikipedia_distilgpt2 = load_and_preprocess_dataset("wikipedia", sample_size=10000,
     #                                                      model_type="distilgpt2", force_reprocess=True)
-    # fairytaleqa_distilgpt2 = load_and_preprocess_dataset("fairytaleqa", sample_size=10000,
+    # trivia_qa_distilgpt2 = load_and_preprocess_dataset("trivia_qa", sample_size=10000,
     #                                                      model_type="distilgpt2", force_reprocess=True)
     # Load & preprocess for DistilBERT
-    tinystories_distilbert = load_and_preprocess_dataset("tinystories", sample_size=30,
-                                                         model_type="distilbert", force_reprocess=True)
-    fairytaleqa_distilbert = load_and_preprocess_dataset("fairytaleqa", sample_size=30,
+    # wikipedia_distilbert = load_and_preprocess_dataset("wikipedia", sample_size=30,
+    #                                                      model_type="distilbert", force_reprocess=True)
+    trivia_qa_distilbert = load_and_preprocess_dataset("trivia_qa", sample_size=30,
                                                          model_type="distilbert", force_reprocess=True)
 
