@@ -154,7 +154,8 @@ class DistilBERTForQuestionAnswering(nn.Module):
         Generates an answer given a context and a question using DistilBERT for Question Answering.
         """
         # Tokenize input (context + question)
-        encoding = self.tokenizer(context, question,  return_tensors="pt", truncation=True, padding=True)
+        encoding = self.tokenizer(question, context,  return_tensors="pt", truncation=True, padding=True,
+                                  return_overflowing_tokens=False)
 
         input_ids = encoding["input_ids"].to(self.device)
         attention_mask = encoding["attention_mask"].to(self.device)
