@@ -45,6 +45,8 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
 
             # Handle context as a list or string
             context = raw["search_results"].get("search_context", ["no context"])
+            if len(context) == 0:
+                context = ["no context"]
             context = " ".join(context).strip()
 
             # # Join context if it's a list
