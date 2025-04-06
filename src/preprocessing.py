@@ -40,28 +40,26 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
 
         elif dataset_name == "trivia_qa":
             # TriviaQA for extractive QA with DistilBERT
-            question = raw.get("question", "")
-            question = question.strip() if isinstance(question, str) else "no question"
+            question = raw.get("question", "no question").strip()
+            #question = question.strip() if isinstance(question, str) else "no question"
 
             # Handle context as a list or string
-            if "search_results" in raw:
-                context_raw = raw.get("search_results", {}).get("search_context", "")
-            else:
-                context_raw = raw.get("context", "")
+            context = raw["search_results"].get("search_context", ["no context"])
+            context = " ".join(context).strip()
 
-            # Join context if it's a list
-            if isinstance(context_raw, list):
-                context = " ".join(context_raw).strip() if context_raw else "no context"
-            elif isinstance(context_raw, str):
-                context = context_raw.strip() or "no context"
-            else:
-                context = "no context"
+            # # Join context if it's a list
+            # if isinstance(context_raw, list):
+            #     context = " ".join(context_raw).strip() if context_raw else "no context"
+            # elif isinstance(context_raw, str):
+            #     context = context_raw.strip() or "no context"
+            # else:
+            #     context = "no context"
 
             # Handle answer
-            answer = raw.get("answer", "")
-            if isinstance(answer, dict):
-                answer = answer.get("value", "")
-            answer = answer.strip() if isinstance(answer, str) else "no answer"
+            # answer = raw.get("answer", "")
+            # if isinstance(answer, dict):
+            answer = raw['answer'].get("value", "no answer")
+            # answer = answer.strip() if isinstance(answer, str) else "no answer"
 
             tokenized_output = distilbert_tokenizer(
                 question, context,  padding="max_length", truncation=True, max_length=512,
@@ -144,6 +142,8 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     if not "validation" in dataset:
         dataset["validation"] = dataset["train"].select(range(valid_split_idx))
         dataset["train"] = dataset["train"].select(range(valid_split_idx, sample_size))
+    if len(dataset["validation"]) > valid_split_idx:
+        dataset["validation"] = dataset["validation"].select(range(valid_split_idx))
     if "test" in dataset:
         del dataset["test"]
     print(len(dataset['train']))
