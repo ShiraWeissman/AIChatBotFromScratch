@@ -15,6 +15,7 @@ distilbert_tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-unca
 distilgpt2_tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
 distilgpt2_tokenizer.pad_token = distilgpt2_tokenizer.eos_token
 
+
 def check_existing_files(model_type, dataset_name):
     file_path = os.path.join(processed_dir, f"{dataset_name}_{model_type}_preprocessed.pkl")
     return file_path if os.path.exists(file_path) else None
@@ -63,7 +64,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
             answer = answer.strip() if isinstance(answer, str) else "no answer"
 
             tokenized_output = distilbert_tokenizer(
-                question, context, padding="max_length", truncation=True, max_length=512
+                context, question, padding="max_length", truncation=True, max_length=512
             )
             answer_tokens = distilbert_tokenizer(answer, add_special_tokens=False)["input_ids"]
             context_tokens = tokenized_output["input_ids"]
@@ -110,7 +111,6 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
             return tokenized_output
 
 
-
 def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_size=10000, force_reprocess=False):
     """
     Loads the dataset from Hugging Face and preprocesses it for the specified model type.
@@ -133,7 +133,7 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 
     print(f"Downloading {dataset_name} dataset from Hugging Face...")
     if dataset_name == 'trivia_qa':
-        dataset = load_dataset(dataset_path,  "rc", trust_remote_code=True)
+        dataset = load_dataset(dataset_path, "rc", trust_remote_code=True)
     elif dataset_name == 'wikipedia':
         dataset = load_dataset(dataset_path, "20231101.en", trust_remote_code=True)
     sample_size = min(sample_size, len(dataset['train']))
@@ -158,7 +158,6 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
     return dataset
 
 
-
 if __name__ == "__main__":
     # Load & preprocess for DistiGPT2
     # wikipedia_distilgpt2 = load_and_preprocess_dataset("wikipedia", sample_size=10000,
@@ -169,5 +168,4 @@ if __name__ == "__main__":
     # wikipedia_distilbert = load_and_preprocess_dataset("wikipedia", sample_size=30,
     #                                                      model_type="distilbert", force_reprocess=True)
     trivia_qa_distilbert = load_and_preprocess_dataset("trivia_qa", sample_size=30,
-                                                         model_type="distilbert", force_reprocess=True)
-
+                                                       model_type="distilbert", force_reprocess=True)
