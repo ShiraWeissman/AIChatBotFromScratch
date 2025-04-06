@@ -39,10 +39,19 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
 
         elif dataset_name == "trivia_qa":
             # TriviaQA for extractive QA with DistilBERT
-            question = raw["question"]
-            context = raw["search_results"]["search_context"] if "search_results" in raw else raw.get("context", "")
-            answer = raw["answer"]["value"] if isinstance(raw["answer"], dict) else raw["answer"]
+            question = raw.get("question", "").strip() or "no question"
+            context = (raw.get("search_results", {}).get("search_context", "").strip()
+                          if "search_results" in raw else raw.get("context", "").strip()
+                      ) or "no context"
 
+            answer = raw.get("answer", "")
+            if isinstance(answer, dict):
+                answer = answer.get("value", "").strip()
+            else:
+                answer = str(answer).strip()
+
+            if not answer:
+                answer = "no answer"
             tokenized_output = distilbert_tokenizer(
                 question, context, padding="max_length", truncation=True, max_length=512
             )
