@@ -44,7 +44,7 @@ def preprocess_text(raw, model_type="distilgpt2", dataset_name="wikipedia"):
             answer = raw["answer"]["value"] if isinstance(raw["answer"], dict) else raw["answer"]
 
             tokenized_output = distilbert_tokenizer(
-                context, question, padding="max_length", truncation=True, max_length=512
+                question, context, padding="max_length", truncation=True, max_length=512
             )
             answer_tokens = distilbert_tokenizer(answer, add_special_tokens=False)["input_ids"]
             context_tokens = tokenized_output["input_ids"]
