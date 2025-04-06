@@ -114,19 +114,18 @@ def load_and_preprocess_dataset(dataset_name, model_type="distilgpt2", sample_si
 
     print(f"Downloading {dataset_name} dataset from Hugging Face...")
     if dataset_name == 'trivia_qa':
-        dataset = load_dataset(dataset_path,  "unfiltered", trust_remote_code=True)
+        dataset = load_dataset(dataset_path,  "rc", trust_remote_code=True)
     elif dataset_name == 'wikipedia':
         dataset = load_dataset(dataset_path, "20231101.en", trust_remote_code=True)
     valid_split_idx = int(0.1 * sample_size)
-    test_split_idx = int(0.01 * sample_size)
     if len(dataset['train']) > sample_size:
         dataset["train"] = dataset["train"].select(range(sample_size))
-        dataset["test"] = dataset["train"].select(range(test_split_idx))
-        dataset["validation"] = dataset["train"].select(range(test_split_idx, valid_split_idx))
-        dataset["train"] = dataset["train"].select(range(valid_split_idx, sample_size))
-        print(len(dataset['train']))
-        print(len(dataset['validation']))
-        print(len(dataset['test']))
+    dataset["validation"] = dataset["train"].select(range(valid_split_idx))
+    dataset["train"] = dataset["train"].select(range(valid_split_idx, sample_size))
+    if "test" in dataset:
+        del dataset["test"]
+    print(len(dataset['train']))
+    print(len(dataset['validation']))
 
     print(f"Preprocessing {dataset_name} for {model_type} model...")
     dataset = dataset.map(lambda x: preprocess_text(x, model_type=model_type, dataset_name=dataset_name))
