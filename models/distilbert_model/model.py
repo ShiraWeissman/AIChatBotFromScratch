@@ -149,7 +149,7 @@ class DistilBERTForQuestionAnswering(nn.Module):
 
     import torch
 
-    def generate_answer(self, question, config, context="Fairy tales"):
+    def generate_answer(self, context, question, config):
         """
         Generates an answer given a context and a question using DistilBERT for Question Answering.
         """

@@ -143,7 +143,7 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
         avg_loss = total_loss / total_samples
         return avg_loss
 
-    def generate_answer(self, question, config, context="Fairy tales"):
+    def generate_answer(self, context, question, config):
         """
         Generates an answer given a context and a question.
         """
