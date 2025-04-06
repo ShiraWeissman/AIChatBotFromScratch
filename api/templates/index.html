@@ -4,18 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Question Answering</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 300px;
+            margin-top: 100px;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+        form {
+            flex: 1;
+        }
+        .robot-image {
+            max-width: 250px;
+            height: auto;
+            margin-top: 10px;
+            margin-right: 200px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Question Answering using DistilGPT-2</h1>
-    <form action="/generate_answer" method="POST">
-        <label for="context">Context:</label><br>
-        <textarea name="context" id="context" rows="4" cols="50">{{ context or "" }}</textarea><br><br>
+    <h1>What do you want to ask?</h1>
+    <div class="container">
+        <form action="/generate_answer" method="POST">
+            <label for="model">Choose Model:</label><br>
+            <select name="model" id="model">
+                <option value="distilgpt2" {% if model == "distilgpt2" %}selected{% endif %}>DistilGPT-2</option>
+                <option value="distilbert" {% if model == "distilbert" %}selected{% endif %}>DistilBERT</option>
+            </select><br><br>
 
-        <label for="question">Question:</label><br>
-        <input type="text" name="question" id="question" value="{{ question or '' }}" size="50"><br><br>
+            <label for="context">Context:</label><br>
+            <textarea name="context" id="context" rows="4" cols="50">{{ context or "" }}</textarea><br><br>
 
-        <button type="submit">Generate Answer</button>
-    </form>
+            <label for="question">Question:</label><br>
+            <input type="text" name="question" id="question" value="{{ question or '' }}" size="50"><br><br>
+
+            <button type="submit">Generate Answer</button>
+        </form>
+
+        <!-- Robot Image Section -->
+        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712027.png" alt="Cute Robot" class="robot-image">
+    </div>
 
     {% if answer %}
     <h2>Generated Answer:</h2>
