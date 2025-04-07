@@ -24,7 +24,7 @@ class DistilBERTForLanguageModeling(nn.Module):
             self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name)
             print("Loading model..")
             self.model = DistilBertForMaskedLM.from_pretrained(self.pretrained_model_name)
-        elif self.pretrained_model_name == "distilbert-base-uncased":
+        elif self.pretrained_model_name in ["distilbert-base-uncased", "ShiraWeis/distilbert-wikipedia-lm"]:
             print("Loading configuration...")
             self.config = DistilBertConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")
@@ -95,7 +95,7 @@ class DistilBERTForQuestionAnswering(nn.Module):
             self.pretrained_tokenizer_name = pretrained_model_name
             print("Loading model..")
             self.model = DistilBertForQuestionAnswering.from_pretrained(self.pretrained_model_name)
-        elif self.pretrained_model_name == "distilbert-base-uncased":
+        elif self.pretrained_model_name in ["distilbert-base-uncased", "ShiraWeis/distilbert-trivia_qa-qa"]:
             print("Loading configuration...")
             self.config = DistilBertConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")

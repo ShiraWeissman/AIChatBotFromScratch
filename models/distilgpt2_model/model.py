@@ -26,7 +26,7 @@ class DistilGPT2ForLanguageModeling(nn.Module):
             self.pretrained_model_name = os.path.join(root_path, self.pretrained_model_name)
             print("Loading model..")
             self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
-        elif self.pretrained_model_name == "distilgpt2":
+        elif self.pretrained_model_name in ["distilgpt2", "ShiraWeis/distilgpt2-wikipedia-lm"]:
             print("Loading configuration...")
             self.config = AutoConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")
@@ -101,7 +101,7 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
             self.pretrained_tokenizer_name = pretrained_model_name
             print("Loading model..")
             self.model = AutoModelForCausalLM.from_pretrained(self.pretrained_model_name)
-        elif self.pretrained_model_name == "distilgpt2":
+        elif self.pretrained_model_name in ["distilgpt2", "ShiraWeis/distilgpt2-trivia_qa-qa"]:
             print("Loading configuration...")
             self.config = AutoConfig.from_pretrained(self.pretrained_model_name)
             print("Loading model...")
