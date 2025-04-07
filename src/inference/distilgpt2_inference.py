@@ -7,7 +7,6 @@ def generate_response(context, question, model, config):
     Generate text using the trained DistilGPT-2 model.
     """
     response = model.generate_answer(context, question, config)
-
     return response
 
 
@@ -17,11 +16,12 @@ if __name__ == '__main__':
                        pretrained_model_name=config['model']['path'])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    context = ''
-    question = "What is the most common hero name?"
+    context = "capital cities"#'The capital of France is Paris'
+    question = "What is the capital of France?"
     response = generate_response(context, question, model, config)
 
+    print("Context:", context)
     print("Question:", question)
-    print("Generated Text:", response)
+    print("Answer:", response)
 
 

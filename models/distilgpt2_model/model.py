@@ -162,7 +162,10 @@ class DistilGPT2ForQuestionAnswering(nn.Module):
                                          top_k=config["inference"]["top_k"],
                                          top_p=config["inference"]["top_p"],
                                          temperature=config["inference"]["temperature"])
-        return self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        response = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        if 'answer' in response.lower():
+            response = response.split('Answer:')[-1].strip()
+        return response
 
     def save_model(self, save_path="models/distilgpt2_qa"):
         self.model.save_pretrained(save_path)
