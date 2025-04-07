@@ -48,8 +48,10 @@ def generate_answer():
         model = load_chosen_model(model_choice, config)
         if not model:
             return jsonify({"error": "Failed to load model"}), 500
-
-        answer = model.generate_answer(context, question, config)
+        if model_choice == 'distilgpt2':
+            answer = model.generate_answer(context, question, config)
+        elif model_choice == 'distilbert':
+            answer = model.generate_answer(context, question)
 
         return render_template("index.html", model=model_choice, context=context, question=question, answer=answer)
 
