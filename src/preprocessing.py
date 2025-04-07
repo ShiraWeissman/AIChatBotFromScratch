@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from transformers import DistilBertTokenizer, AutoTokenizer
+from transformers import DistilBertTokenizerFast, AutoTokenizer
 from src.utils import *
 
 DATASETS = {
@@ -10,7 +10,7 @@ DATASETS = {
 processed_dir = os.path.join(root_path, "data/processed/")
 os.makedirs(processed_dir, exist_ok=True)
 
-distilbert_tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+distilbert_tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
 
 distilgpt2_tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
 distilgpt2_tokenizer.pad_token = distilgpt2_tokenizer.eos_token

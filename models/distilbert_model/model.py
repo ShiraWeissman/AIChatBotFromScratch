@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import DistilBertConfig, DistilBertForMaskedLM, DistilBertForQuestionAnswering, DistilBertTokenizer
+from transformers import DistilBertConfig, DistilBertForMaskedLM, DistilBertForQuestionAnswering, DistilBertTokenizerFast
 from torch.utils.data import DataLoader
 from src.utils import *
 
@@ -33,7 +33,7 @@ class DistilBERTForLanguageModeling(nn.Module):
             print("Invalid pretrained_model_name")
             return
         print("Loading tokenizer...")
-        self.tokenizer = DistilBertTokenizer.from_pretrained(self.pretrained_tokenizer_name)
+        self.tokenizer = DistilBertTokenizerFast.from_pretrained(self.pretrained_tokenizer_name)
 
     def forward(self, input_ids, attention_mask, labels=None):
         return self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
@@ -105,7 +105,7 @@ class DistilBERTForQuestionAnswering(nn.Module):
             return
 
         print("Loading tokenizer...")
-        self.tokenizer = DistilBertTokenizer.from_pretrained(self.pretrained_tokenizer_name)
+        self.tokenizer = DistilBertTokenizerFast.from_pretrained(self.pretrained_tokenizer_name)
     def forward(self, input_ids, attention_mask, start_positions=None, end_positions=None):
         outputs = self.model(
             input_ids=input_ids,
@@ -149,33 +149,62 @@ class DistilBERTForQuestionAnswering(nn.Module):
 
     import torch
 
-    def generate_answer(self, context, question, config):
+    def generate_answer(self, question, context):
         """
         Generates an answer given a context and a question using DistilBERT for Question Answering.
+        Ensures that predicted answer spans are only from the context part.
         """
-        # Tokenize input (context + question)
-        encoding = self.tokenizer(question, context,  return_tensors="pt", truncation=True, padding=True,
-                                  return_overflowing_tokens=False)
+        encoding = self.tokenizer(
+            question,
+            context,
+            return_tensors="pt",
+            truncation=True,
+            padding=True,
+            return_offsets_mapping=True,
+            return_token_type_ids=True
+        )
 
-        input_ids = encoding["input_ids"].to(self.device)
-        attention_mask = encoding["attention_mask"].to(self.device)
+        input_ids = encoding["input_ids"]
+        attention_mask = encoding["attention_mask"]
+        token_type_ids = encoding["token_type_ids"]  # 0 for question, 1 for context
+        offset_mapping = encoding["offset_mapping"][0]  # (start_char, end_char) per token
 
-        # Get model predictions (start and end logits)
         with torch.no_grad():
             outputs = self.model(input_ids, attention_mask=attention_mask)
 
-        start_logits = outputs.start_logits
-        end_logits = outputs.end_logits
+        start_logits = outputs.start_logits[0]
+        end_logits = outputs.end_logits[0]
 
-        # Get the most probable start and end positions
-        start_idx = torch.argmax(start_logits, dim=-1).item()
-        end_idx = torch.argmax(end_logits, dim=-1).item() + 1  # End index is inclusive
+        # Mask out tokens that are NOT in the context (token_type_id == 1 keeps only context)
+        context_mask = token_type_ids[0] == 1
+        invalid_mask = ~context_mask
 
-        # Decode the predicted answer
-        answer_tokens = input_ids[0][start_idx:end_idx]
-        answer = self.tokenizer.decode(answer_tokens, skip_special_tokens=True)
+        start_logits[invalid_mask] = float('-inf')
+        end_logits[invalid_mask] = float('-inf')
 
-        return answer if answer else "I don't know."
+        # Get most probable start and end indices (within context)
+        start_idx = torch.argmax(start_logits).item()
+        end_idx = torch.argmax(end_logits).item() + 1
+
+        # Use offset_mapping to ensure start and end indices fall within the context span
+        # (check if the character span of the answer is within the context)
+        while token_type_ids[0][start_idx] != 1 and start_idx > 0:
+            start_idx -= 1
+        while token_type_ids[0][end_idx - 1] != 1 and end_idx < len(input_ids[0]):
+            end_idx += 1
+
+        # Get the character offsets for the predicted tokens
+        start_char, _ = offset_mapping[start_idx]
+        _, end_char = offset_mapping[end_idx - 1]
+
+        # Ensure the span falls within the context (based on character indices)
+        if start_char < len(context) and end_char <= len(context):
+            answer_tokens = input_ids[0][start_idx:end_idx]
+            answer = self.tokenizer.decode(answer_tokens, skip_special_tokens=True)
+        else:
+            answer = "I don't know."
+
+        return answer.strip() if answer.strip() else "I don't know."
 
 
 def load_model(task_type="language_modeling", pretrained_model_name="distilbert-base-uncased",
