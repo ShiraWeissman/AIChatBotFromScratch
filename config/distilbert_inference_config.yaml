@@ -1,0 +1,4 @@
+model:
+  path: "models/distilbert_QA_model.zip" #"models/distilbert_model"  # Path to the trained model directory
+  device: "cpu"  # Set to "cuda" for GPU, "cpu" for CPU
+
